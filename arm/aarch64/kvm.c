@@ -130,12 +130,22 @@ int kvm__arch_get_ipa_limit(struct kvm *kvm)
 int kvm__get_vm_type(struct kvm *kvm)
 {
 	unsigned int ipa_bits, max_ipa_bits;
-	unsigned long max_ipa;
+	unsigned long max_ipa, vm_type;
 
-	/* If we're running on an old kernel, use 0 as the VM type */
+	if (kvm__is_realm(kvm)) {
+		if (!kvm__supports_extension(kvm, KVM_CAP_ARM_RME))
+			die("KVM doesn't support Realms");
+		vm_type = KVM_VM_TYPE_ARM_REALM;
+	} else if (kvm->cfg.pkvm) {
+		vm_type = (1U << 31);
+	} else {
+		vm_type = KVM_VM_TYPE_ARM_NORMAL;
+	}
+
+	/* If we're running on an old kernel, use 0 as the IPA bits */
 	max_ipa_bits = kvm__arch_get_ipa_limit(kvm);
 	if (!max_ipa_bits)
-		return 0;
+		return vm_type;
 
 	/* Otherwise, compute the minimal required IPA size */
 	max_ipa = kvm->cfg.ram_addr + kvm->cfg.ram_size - 1;
@@ -146,10 +156,7 @@ int kvm__get_vm_type(struct kvm *kvm)
 	if (ipa_bits > max_ipa_bits)
 		die("Memory too large for this system (needs %d bits, %d available)", ipa_bits, max_ipa_bits);
 
-	if (kvm->cfg.pkvm)
-		return KVM_VM_TYPE_ARM_IPA_SIZE(ipa_bits) | (1U << 31);
-
-	return KVM_VM_TYPE_ARM_IPA_SIZE(ipa_bits);
+	return vm_type | KVM_VM_TYPE_ARM_IPA_SIZE(ipa_bits);
 }
 
 void kvm__arch_enable_mte(struct kvm *kvm)
