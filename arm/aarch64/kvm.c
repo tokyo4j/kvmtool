@@ -246,3 +246,8 @@ void kvm__arch_enable_exit_hypcall(struct kvm *kvm)
 
 	pr_debug("EXIT capability enabled");
 }
+
+u64 kvm__arch_get_virtio_host_features(struct kvm *kvm)
+{
+	return 0;
+}
