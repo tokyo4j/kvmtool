@@ -160,6 +160,7 @@ struct kvm *kvm__new(void)
 	mutex_init(&kvm->mem_banks_lock);
 	kvm->sys_fd = -1;
 	kvm->vm_fd = -1;
+	kvm->ram_fd = -1;
 
 #ifdef KVM_BRLOCK_DEBUG
 	kvm->brlock_sem = (pthread_rwlock_t) PTHREAD_RWLOCK_INITIALIZER;
@@ -173,6 +174,9 @@ int kvm__exit(struct kvm *kvm)
 	struct kvm_mem_bank *bank, *tmp;
 
 	kvm__arch_delete_ram(kvm);
+
+	if (kvm->ram_fd >= 0)
+		close(kvm->ram_fd);
 
 	list_for_each_entry_safe(bank, tmp, &kvm->mem_banks, list) {
 		list_del(&bank->list);

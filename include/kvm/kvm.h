@@ -81,6 +81,7 @@ struct kvm {
 	struct kvm_config	cfg;
 	int			sys_fd;		/* For system ioctls(), i.e. /dev/kvm */
 	int			vm_fd;		/* For VM ioctls() */
+	int			ram_fd;		/* For guest memory. */
 	timer_t			timerid;	/* Posix timer for interrupts */
 
 	int			nrcpus;		/* Number of cpus to run */

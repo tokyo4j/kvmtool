@@ -118,35 +118,36 @@ static u64 get_hugepage_blk_size(const char *hugetlbfs_path)
 	return sfs.f_bsize;
 }
 
-static void *mmap_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size, u64 blk_size)
+int memfd_alloc(u64 size, bool hugetlb, u64 blk_size)
 {
 	const char *name = "kvmtool";
 	unsigned int flags = 0;
 	int fd;
-	void *addr;
 
-	if (!is_power_of_two(blk_size))
-		die("Hugepage size must be a power of 2");
+	if (hugetlb) {
+		if (!is_power_of_two(blk_size))
+			die("Hugepage size must be a power of 2");
 
-	flags |= MFD_HUGETLB;
-	flags |= blk_size << MFD_HUGE_SHIFT;
+		flags |= MFD_HUGETLB;
+		flags |= blk_size << MFD_HUGE_SHIFT;
+	}
 
 	fd = memfd_create(name, flags);
 	if (fd < 0)
-		die_perror("Can't memfd_create for hugetlbfs map");
+		die_perror("Can't memfd_create for memory map");
+
 	if (ftruncate(fd, size) < 0)
 		die("Can't ftruncate for mem mapping size %lld",
 			(unsigned long long)size);
-	addr = mmap(NULL, size, PROT_RW, MAP_PRIVATE, fd, 0);
-	close(fd);
 
-	return addr;
+	return fd;
 }
 
 /* This function wraps the decision between hugetlbfs map (if requested) or normal mmap */
 void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
 {
 	u64 blk_size = 0;
+	int fd;
 
 	/*
 	 * We don't /need/ to map guest RAM from hugetlbfs, but we do so
@@ -161,9 +162,14 @@ void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 si
 		}
 
 		kvm->ram_pagesize = blk_size;
-		return mmap_hugetlbfs(kvm, hugetlbfs_path, size, blk_size);
 	} else {
 		kvm->ram_pagesize = getpagesize();
-		return mmap(NULL, size, PROT_RW, MAP_ANON_NORESERVE, -1, 0);
 	}
+
+	fd = memfd_alloc(size, hugetlbfs_path, blk_size);
+	if (fd < 0)
+		return MAP_FAILED;
+
+	kvm->ram_fd = fd;
+	return mmap(NULL, size, PROT_RW, MAP_PRIVATE, kvm->ram_fd, 0);
 }
