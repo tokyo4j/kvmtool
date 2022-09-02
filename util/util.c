@@ -104,7 +104,7 @@ void die_perror(const char *s)
 	exit(1);
 }
 
-void *mmap_hugetlbfs(struct kvm *kvm, const char *htlbfs_path, u64 size)
+static void *mmap_hugetlbfs(struct kvm *kvm, const char *htlbfs_path, u64 size)
 {
 	char mpath[PATH_MAX];
 	int fd;
