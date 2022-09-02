@@ -104,7 +104,7 @@ void die_perror(const char *s)
 	exit(1);
 }
 
-static void *mmap_hugetlbfs(struct kvm *kvm, const char *htlbfs_path, u64 size)
+static void *mmap_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
 {
 	char mpath[PATH_MAX];
 	int fd;
@@ -112,11 +112,11 @@ static void *mmap_hugetlbfs(struct kvm *kvm, const char *htlbfs_path, u64 size)
 	void *addr;
 	unsigned long blk_size;
 
-	if (statfs(htlbfs_path, &sfs) < 0)
-		die("Can't stat %s", htlbfs_path);
+	if (statfs(hugetlbfs_path, &sfs) < 0)
+		die("Can't stat %s", hugetlbfs_path);
 
 	if ((unsigned int)sfs.f_type != HUGETLBFS_MAGIC)
-		die("%s is not hugetlbfs!", htlbfs_path);
+		die("%s is not hugetlbfs!", hugetlbfs_path);
 
 	blk_size = (unsigned long)sfs.f_bsize;
 	if (sfs.f_bsize == 0 || blk_size > size) {
@@ -126,7 +126,7 @@ static void *mmap_hugetlbfs(struct kvm *kvm, const char *htlbfs_path, u64 size)
 
 	kvm->ram_pagesize = blk_size;
 
-	snprintf(mpath, PATH_MAX, "%s/kvmtoolXXXXXX", htlbfs_path);
+	snprintf(mpath, PATH_MAX, "%s/kvmtoolXXXXXX", hugetlbfs_path);
 	fd = mkstemp(mpath);
 	if (fd < 0)
 		die("Can't open %s for hugetlbfs map", mpath);
