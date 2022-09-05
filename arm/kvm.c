@@ -74,6 +74,21 @@ void kvm__arch_set_cmdline(char *cmdline, bool video)
 
 void kvm__arch_init(struct kvm *kvm)
 {
+	if (kvm->cfg.restricted_mem)
+	{
+		u64 attr;
+
+		if (!kvm__supports_extension(kvm, KVM_CAP_MEMORY_ATTRIBUTES))
+			die("KVM memory attributes capability not supported");
+
+		attr = ioctl(kvm->vm_fd, KVM_CHECK_EXTENSION,
+			     KVM_CAP_MEMORY_ATTRIBUTES);
+
+		if (!(attr & KVM_MEMORY_ATTRIBUTE_PRIVATE)) {
+			die("Private memory not supported");
+		}
+	}
+
 	/* Create the virtual GIC. */
 	if (gic__create(kvm, kvm->cfg.arch.irqchip))
 		die("Failed to create virtual GIC");
