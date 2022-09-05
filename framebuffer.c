@@ -73,6 +73,8 @@ int fb__exit(struct kvm *kvm)
 				fb->targets[i]->stop(fb);
 
 		munmap(fb->mem, fb->mem_size);
+		if (fb->mem_fd >= 0)
+			close(fb->mem_fd);
 	}
 
 	return 0;

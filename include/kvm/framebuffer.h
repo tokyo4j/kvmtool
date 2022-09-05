@@ -22,6 +22,7 @@ struct framebuffer {
 	char				*mem;
 	u64				mem_addr;
 	u64				mem_size;
+	int				mem_fd;
 	struct kvm			*kvm;
 
 	unsigned long			nr_targets;
