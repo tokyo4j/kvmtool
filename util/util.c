@@ -164,7 +164,7 @@ void *mmap_anon_or_hugetlbfs_align(struct kvm *kvm, const char *hugetlbfs_path,
 		blk_size = get_hugepage_blk_size(hugetlbfs_path);
 
 		if (blk_size == 0 || blk_size > size) {
-			die("Can't use hugetlbfs pagesize %lld for mem size %lld\n",
+			die("Can't use hugetlbfs pagesize %lld for mem size %lld",
 				(unsigned long long)blk_size, (unsigned long long)size);
 		}
 

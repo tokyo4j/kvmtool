@@ -193,10 +193,30 @@ int kvm__exit(struct kvm *kvm)
 }
 core_exit(kvm__exit);
 
+
+static int set_user_memory_region(int vm_fd, u32 slot, u32 flags,
+				  u64 guest_phys, u64 size,
+				  u64 userspace_addr)
+{
+	int ret = 0;
+	struct kvm_userspace_memory_region mem = {
+		.slot			= slot,
+		.flags			= flags,
+		.guest_phys_addr	= guest_phys,
+		.memory_size		= size,
+		.userspace_addr		= (unsigned long)userspace_addr,
+	};
+
+	ret = ioctl(vm_fd, KVM_SET_USER_MEMORY_REGION, &mem);
+	if (ret < 0)
+		ret = -errno;
+
+	return ret;
+}
+
 int kvm__destroy_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 		     void *userspace_addr)
 {
-	struct kvm_userspace_memory_region mem;
 	struct kvm_mem_bank *bank;
 	int ret;
 
@@ -220,18 +240,10 @@ int kvm__destroy_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 		goto out;
 	}
 
-	mem = (struct kvm_userspace_memory_region) {
-		.slot			= bank->slot,
-		.guest_phys_addr	= guest_phys,
-		.memory_size		= 0,
-		.userspace_addr		= (unsigned long)userspace_addr,
-	};
-
-	ret = ioctl(kvm->vm_fd, KVM_SET_USER_MEMORY_REGION, &mem);
-	if (ret < 0) {
-		ret = -errno;
+	ret = set_user_memory_region(kvm->vm_fd, bank->slot, 0, guest_phys, 0,
+				     (u64) userspace_addr);
+	if (ret < 0)
 		goto out;
-	}
 
 	list_del(&bank->list);
 	free(bank);
@@ -246,7 +258,6 @@ out:
 int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 		      void *userspace_addr, enum kvm_mem_type type)
 {
-	struct kvm_userspace_memory_region mem;
 	struct kvm_mem_bank *merged = NULL;
 	struct kvm_mem_bank *bank;
 	struct list_head *prev_entry;
@@ -327,19 +338,11 @@ int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 		flags |= KVM_MEM_READONLY;
 
 	if (type != KVM_MEM_TYPE_RESERVED) {
-		mem = (struct kvm_userspace_memory_region) {
-			.slot			= slot,
-			.flags			= flags,
-			.guest_phys_addr	= guest_phys,
-			.memory_size		= size,
-			.userspace_addr		= (unsigned long)userspace_addr,
-		};
-
-		ret = ioctl(kvm->vm_fd, KVM_SET_USER_MEMORY_REGION, &mem);
-		if (ret < 0) {
-			ret = -errno;
+		ret = set_user_memory_region(kvm->vm_fd, slot, flags,
+					     guest_phys, size,
+					     (u64) userspace_addr);
+		if (ret < 0)
 			goto out;
-		}
 	}
 
 	list_add(&bank->list, prev_entry);
