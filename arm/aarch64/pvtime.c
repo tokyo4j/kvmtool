@@ -8,25 +8,35 @@
 #define ARM_PVTIME_STRUCT_SIZE		(64)
 
 static void *usr_mem;
+int user_mem_fd = -1;
 
 static int pvtime__alloc_region(struct kvm *kvm)
 {
 	char *mem;
+	int mem_fd;
 	int ret = 0;
 
-	mem = mmap(NULL, ARM_PVTIME_SIZE, PROT_RW,
-		   MAP_ANON_NORESERVE, -1, 0);
-	if (mem == MAP_FAILED)
+	mem_fd = memfd_alloc(ARM_PVTIME_SIZE, false, 0);
+	if (mem_fd < 0)
 		return -errno;
+
+	mem = mmap(NULL, ARM_PVTIME_SIZE, PROT_RW, MAP_PRIVATE, mem_fd, 0);
+	if (mem == MAP_FAILED) {
+		ret = -errno;
+		close(mem_fd);
+		return ret;
+	}
 
 	ret = kvm__register_ram(kvm, ARM_PVTIME_BASE,
 				ARM_PVTIME_SIZE, mem);
 	if (ret) {
 		munmap(mem, ARM_PVTIME_SIZE);
+		close(mem_fd);
 		return ret;
 	}
 
 	usr_mem = mem;
+	user_mem_fd = mem_fd;
 	return ret;
 }
 
@@ -38,7 +48,9 @@ static int pvtime__teardown_region(struct kvm *kvm)
 	kvm__destroy_mem(kvm, ARM_PVTIME_BASE,
 			 ARM_PVTIME_SIZE, usr_mem);
 	munmap(usr_mem, ARM_PVTIME_SIZE);
+	close(user_mem_fd);
 	usr_mem = NULL;
+	user_mem_fd = -1;
 	return 0;
 }
 
