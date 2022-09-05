@@ -28,7 +28,7 @@ static int pvtime__alloc_region(struct kvm *kvm)
 	}
 
 	ret = kvm__register_ram(kvm, ARM_PVTIME_BASE,
-				ARM_PVTIME_SIZE, mem);
+				ARM_PVTIME_SIZE, mem, mem_fd, 0);
 	if (ret) {
 		munmap(mem, ARM_PVTIME_SIZE);
 		close(mem_fd);

@@ -255,7 +255,8 @@ int vfio_map_region(struct kvm *kvm, struct vfio_device *vdev,
 	region->host_addr = base;
 
 	ret = kvm__register_dev_mem(kvm, region->guest_phys_addr, map_size,
-				    region->host_addr);
+				    region->host_addr, vdev->fd,
+				    region->info.offset);
 	if (ret) {
 		vfio_dev_err(vdev, "failed to register region with KVM");
 		return ret;

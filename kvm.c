@@ -256,7 +256,8 @@ out:
 }
 
 int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size,
-		      void *userspace_addr, enum kvm_mem_type type)
+		      void *userspace_addr, int memfd, u64 offset,
+		      enum kvm_mem_type type)
 {
 	struct kvm_mem_bank *merged = NULL;
 	struct kvm_mem_bank *bank;

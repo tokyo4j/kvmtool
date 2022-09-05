@@ -131,6 +131,7 @@ struct cfi_flash_device {
 	u32			size;
 
 	void			*flash_memory;
+	int			flash_fd;
 	u8			program_buffer[PROGRAM_BUFF_SIZE];
 	unsigned long		*lock_bm;
 	u64			block_address;
@@ -451,7 +452,7 @@ static int map_flash_memory(struct kvm *kvm, struct cfi_flash_device *sfdev)
 	int ret;
 
 	ret = kvm__register_mem(kvm, sfdev->base_addr, sfdev->size,
-				sfdev->flash_memory,
+				sfdev->flash_memory, sfdev->flash_fd, 0,
 				KVM_MEM_TYPE_RAM | KVM_MEM_TYPE_READONLY);
 	if (!ret)
 		sfdev->is_mapped = true;
@@ -583,6 +584,7 @@ static struct cfi_flash_device *create_flash_device_file(struct kvm *kvm,
 		ret = -errno;
 		goto out_free;
 	}
+	sfdev->flash_fd = fd;
 	sfdev->base_addr = KVM_FLASH_MMIO_BASE;
 	sfdev->state = READY;
 	sfdev->read_mode = READ_ARRAY;

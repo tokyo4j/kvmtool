@@ -102,7 +102,7 @@ struct framebuffer *vesa__init(struct kvm *kvm)
 		goto close_memfd;
 	}
 
-	r = kvm__register_dev_mem(kvm, VESA_MEM_ADDR, VESA_MEM_SIZE, mem);
+	r = kvm__register_dev_mem(kvm, VESA_MEM_ADDR, VESA_MEM_SIZE, mem, mem_fd, 0);
 	if (r < 0)
 		goto unmap_dev;
 
