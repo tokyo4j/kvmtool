@@ -20,7 +20,7 @@ static int pvtime__alloc_region(struct kvm *kvm)
 	if (mem_fd < 0)
 		return -errno;
 
-	mem = mmap(NULL, ARM_PVTIME_SIZE, PROT_RW, MAP_PRIVATE, mem_fd, 0);
+	mem = mmap(NULL, ARM_PVTIME_SIZE, PROT_RW, MAP_SHARED, mem_fd, 0);
 	if (mem == MAP_FAILED) {
 		ret = -errno;
 		close(mem_fd);
