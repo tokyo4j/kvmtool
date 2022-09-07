@@ -96,7 +96,7 @@ struct framebuffer *vesa__init(struct kvm *kvm)
 		goto unregister_device;
 	}
 
-	mem = mmap(NULL, VESA_MEM_SIZE, PROT_RW, MAP_PRIVATE, mem_fd, 0);
+	mem = mmap(NULL, VESA_MEM_SIZE, PROT_RW, MAP_SHARED, mem_fd, 0);
 	if (mem == MAP_FAILED) {
 		r = -errno;
 		goto close_memfd;
