@@ -151,7 +151,7 @@ void kvm_cpu__select_features(struct kvm *kvm, struct kvm_vcpu_init *init)
 	}
 
 	/* Enable SVE if available */
-	if (kvm__supports_extension(kvm, KVM_CAP_ARM_SVE))
+	if (kvm__supports_vm_extension(kvm, KVM_CAP_ARM_SVE))
 		init->features[0] |= 1UL << KVM_ARM_VCPU_SVE;
 }
 
@@ -213,7 +213,7 @@ static int vcpu_configure_sve(struct kvm_cpu *vcpu)
 
 int kvm_cpu__configure_features(struct kvm_cpu *vcpu)
 {
-	if (kvm__supports_extension(vcpu->kvm, KVM_CAP_ARM_SVE))
+	if (kvm__supports_vm_extension(vcpu->kvm, KVM_CAP_ARM_SVE))
 		return vcpu_configure_sve(vcpu);
 
 	return 0;
