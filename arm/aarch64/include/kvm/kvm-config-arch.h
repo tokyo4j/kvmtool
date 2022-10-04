@@ -23,7 +23,9 @@ int sve_vl_parser(const struct option *opt, const char *arg, int unset);
 			" stolen time"),				\
 	OPT_CALLBACK('\0', "sve-max-vl", NULL, "vector length",		\
 		     "Specify the max SVE vector length (in bits) for "	\
-		     "all vCPUs", sve_vl_parser, kvm),
+	             "all vCPUs", sve_vl_parser, kvm), 			\
+	OPT_BOOLEAN('\0', "disable-sve", &(cfg)->disable_sve,		\
+			"Disable SVE"),
 #include "arm-common/kvm-config-arch.h"
 
 #endif /* KVM__KVM_CONFIG_ARCH_H */
