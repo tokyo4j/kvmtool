@@ -1,5 +1,6 @@
 #include <linux/list.h>
 #include "kvm/kvm.h"
+#include "kvm/kvm-cpu.h"
 
 #include "asm/realm.h"
 
@@ -138,8 +139,22 @@ void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
 	list_add_tail(&new_region->list, &realm_ram_regions);
 }
 
+static void kvm_arm_realm_activate_realm(struct kvm *kvm)
+{
+	struct kvm_enable_cap activate_realm = {
+		.cap = KVM_CAP_ARM_RME,
+		.args[0] = KVM_CAP_ARM_RME_ACTIVATE_REALM,
+	};
+
+	if (ioctl(kvm->vm_fd, KVM_ENABLE_CAP, &activate_realm) < 0)
+		die_perror("KVM_CAP_ARM_RME(KVM_CAP_ARM_RME_ACTIVATE_REALM)");
+
+	kvm->arch.realm_is_active = true;
+}
+
 static int kvm_arm_realm_finalize(struct kvm *kvm)
 {
+	int i;
 	struct realm_ram_region *region, *next;
 
 	if (!kvm__is_realm(kvm))
@@ -152,6 +167,16 @@ static int kvm_arm_realm_finalize(struct kvm *kvm)
 		list_del(&region->list);
 		free(region);
 	}
+
+	/*
+	 * VCPU reset must happen before the realm is activated, because their
+	 * state is part of the cryptographic measurement for the realm.
+	 */
+	for (i = 0; i < kvm->nrcpus; i++)
+		kvm_cpu__reset_vcpu(kvm->cpus[i]);
+
+	/* Activate and seal the measurement for the realm. */
+	kvm_arm_realm_activate_realm(kvm);
 
 	return 0;
 }
