@@ -25,7 +25,10 @@ int sve_vl_parser(const struct option *opt, const char *arg, int unset);
 		     "Specify the max SVE vector length (in bits) for "	\
 	             "all vCPUs", sve_vl_parser, kvm), 			\
 	OPT_BOOLEAN('\0', "disable-sve", &(cfg)->disable_sve,		\
-			"Disable SVE"),
+			"Disable SVE"),					\
+	OPT_BOOLEAN('\0', "realm", &(cfg)->is_realm,			\
+			"Create VM running in a realm using Arm RME"),
+
 #include "arm-common/kvm-config-arch.h"
 
 #endif /* KVM__KVM_CONFIG_ARCH_H */
