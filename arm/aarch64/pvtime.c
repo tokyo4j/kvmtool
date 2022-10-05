@@ -16,7 +16,7 @@ static int pvtime__alloc_region(struct kvm *kvm)
 	int mem_fd;
 	int ret = 0;
 
-	mem_fd = memfd_alloc(ARM_PVTIME_SIZE, false, 0);
+	mem_fd = memfd_alloc(kvm, ARM_PVTIME_SIZE, false, 0);
 	if (mem_fd < 0)
 		return -errno;
 

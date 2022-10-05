@@ -145,7 +145,7 @@ static inline int pow2_size(unsigned long x)
 }
 
 struct kvm;
-int memfd_alloc(u64 size, bool hugetlb, u64 blk_size);
+int memfd_alloc(struct kvm *kvm, size_t size, bool hugetlb, u64 hugepage_size);
 void *mmap_anon_or_hugetlbfs_align(struct kvm *kvm, const char *hugetlbfs_path,
 				   u64 size, u64 align);
 void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size);

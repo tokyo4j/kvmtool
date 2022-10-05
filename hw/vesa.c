@@ -90,7 +90,7 @@ struct framebuffer *vesa__init(struct kvm *kvm)
 	if (r < 0)
 		goto unregister_ioport;
 
-	mem_fd = memfd_alloc(ARM_PVTIME_SIZE, false, 0, 0);
+	mem_fd = memfd_alloc(kvm, ARM_PVTIME_SIZE, false, 0, 0);
 	if (mem_fd < 0) {
 		r = -errno;
 		goto unregister_device;
