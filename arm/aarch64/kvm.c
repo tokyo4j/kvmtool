@@ -131,6 +131,9 @@ int kvm__get_vm_type(struct kvm *kvm)
 	if (ipa_bits > max_ipa_bits)
 		die("Memory too large for this system (needs %d bits, %d available)", ipa_bits, max_ipa_bits);
 
+	if (kvm->cfg.pkvm)
+		return KVM_VM_TYPE_ARM_IPA_SIZE(ipa_bits) | (1U << 31);
+
 	return KVM_VM_TYPE_ARM_IPA_SIZE(ipa_bits);
 }
 

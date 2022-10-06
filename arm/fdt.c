@@ -116,6 +116,7 @@ static int setup_fdt(struct kvm *kvm)
 					void (*)(void *, u8, enum irq_type));
 	void (*generate_cpu_peripheral_fdt_nodes)(void *, struct kvm *)
 					= kvm->cpus[0]->generate_fdt_nodes;
+	u64 resv_mem_prop;
 
 	/* Create new tree without a reserve map */
 	_FDT(fdt_create(fdt, FDT_MAX_SIZE));
@@ -162,6 +163,23 @@ static int setup_fdt(struct kvm *kvm)
 	_FDT(fdt_property_string(fdt, "device_type", "memory"));
 	_FDT(fdt_property(fdt, "reg", mem_reg_prop, sizeof(mem_reg_prop)));
 	_FDT(fdt_end_node(fdt));
+
+	if (kvm->cfg.pkvm) {
+		/* Reserved memory (restricted DMA) */
+		_FDT(fdt_begin_node(fdt, "reserved-memory"));
+		_FDT(fdt_property_cell(fdt, "#address-cells", 0x2));
+		_FDT(fdt_property_cell(fdt, "#size-cells", 0x2));
+		_FDT(fdt_property(fdt, "ranges", NULL, 0));
+
+		_FDT(fdt_begin_node(fdt, "restricted_dma_reserved"));
+		_FDT(fdt_property_string(fdt, "compatible", "restricted-dma-pool"));
+		resv_mem_prop = cpu_to_fdt64(SZ_8M);
+		_FDT(fdt_property(fdt, "size", &resv_mem_prop, sizeof(resv_mem_prop)));
+		_FDT(fdt_property_cell(fdt, "phandle", PHANDLE_DMA));
+		_FDT(fdt_end_node(fdt));
+
+		_FDT(fdt_end_node(fdt));
+	}
 
 	/* CPU and peripherals (interrupt controller, timers, etc) */
 	generate_cpu_nodes(fdt, kvm);

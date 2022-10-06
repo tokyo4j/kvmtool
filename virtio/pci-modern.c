@@ -150,6 +150,9 @@ static bool virtio_pci__common_read(struct virtio_device *vdev,
 	struct virtio_pci *vpci = vdev->virtio;
 	u64 features = 1ULL << VIRTIO_F_VERSION_1;
 
+	if (vpci->kvm->cfg.pkvm)
+		features |= 1ULL << VIRTIO_F_ACCESS_PLATFORM;
+
 	switch (offset - VPCI_CFG_COMMON_START) {
 	case VIRTIO_PCI_COMMON_DFSELECT:
 		val = vpci->device_features_sel;

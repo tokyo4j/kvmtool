@@ -66,6 +66,7 @@ struct kvm_config {
 	bool mmio_debug;
 	int virtio_transport;
 	bool restricted_mem;
+	bool pkvm;
 };
 
 #endif
