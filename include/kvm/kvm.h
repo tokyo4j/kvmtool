@@ -76,6 +76,8 @@ struct kvm_mem_bank {
 	u64			size;
 	enum kvm_mem_type	type;
 	u32			slot;
+	int			memfd;
+	u64			memfd_offset;
 };
 
 struct kvm {

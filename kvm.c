@@ -378,6 +378,8 @@ int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 	bank->size			= size;
 	bank->type			= type;
 	bank->slot			= slot;
+	bank->memfd			= memfd;
+	bank->memfd_offset		= offset;
 
 	if (type & KVM_MEM_TYPE_READONLY)
 		flags |= KVM_MEM_READONLY;
