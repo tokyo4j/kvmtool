@@ -68,8 +68,8 @@ void kvm__init_ram(struct kvm *kvm)
 
 	kvm->arch.memory_guest_start = phys_start;
 
-	pr_debug("RAM created at 0x%llx - 0x%llx",
-		 phys_start, phys_start + phys_size - 1);
+	pr_debug("RAM created at 0x%llx - 0x%llx (host_mem 0x%llx)",
+		 phys_start, phys_start + phys_size - 1, (u64)host_mem);
 }
 
 void kvm__arch_delete_ram(struct kvm *kvm)
