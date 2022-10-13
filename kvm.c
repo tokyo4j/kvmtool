@@ -470,6 +470,188 @@ int kvm__for_each_mem_bank(struct kvm *kvm, enum kvm_mem_type type,
 	return ret;
 }
 
+static void *_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+{
+	return mmap(addr, len, prot, flags | MAP_FIXED, fd, offset);
+}
+
+static int _munmap(void *addr, size_t len)
+{
+	if (mmap(addr, len, PROT_NONE, MAP_SHARED | MAP_FIXED | MAP_ANON, -1, 0) != MAP_FAILED)
+		return 0;
+
+	return -EFAULT;
+}
+
+struct bank_range {
+	u64 gpa;
+	u64 size;
+};
+
+static bool is_bank_range(struct kvm_mem_bank *bank, struct bank_range *range)
+{
+	u64 bank_start = bank->guest_phys_addr;
+	u64 bank_end = bank_start + bank->size;
+	u64 gpa_end = range->gpa + range->size;
+
+	if (range->gpa < bank_start || range->gpa >= bank_end)
+		return false;
+
+	if (gpa_end > bank_end || gpa_end <= bank_start) {
+		pr_warning("%s invalid guest range", __func__);
+		return false;
+	}
+
+	return true;
+}
+
+static int map_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	struct bank_range *range = data;
+	u64 gpa_offset;
+	u64 map_offset;
+	u64 hva;
+	void *mapping;
+
+	if (!is_bank_range(bank, range))
+		return 0;
+
+	gpa_offset = range->gpa - bank->guest_phys_addr;
+	map_offset = bank->memfd_offset + gpa_offset;
+	hva = (u64) bank->host_addr + gpa_offset;
+
+	BUG_ON(map_offset > bank->memfd_offset + bank->size);
+	BUG_ON(map_offset < bank->memfd_offset);
+	BUG_ON(hva < (u64)bank->host_addr);
+	BUG_ON(!bank->memfd);
+
+	mapping = _mmap((void *)hva, range->size, PROT_RW, MAP_SHARED, bank->memfd, map_offset);
+	if (mapping == MAP_FAILED || mapping != (void *)hva)
+		pr_warning("%s gpa 0x%llx (size: %llu) at hva 0x%llx failed with mapping 0x%llx",
+			   __func__,
+			   (unsigned long long)range->gpa,
+			   (unsigned long long)range->size,
+			   (unsigned long long)hva,
+			   (unsigned long long)mapping);
+
+	/* Do not proceed to trying to map the other banks. */
+	return 1;
+}
+
+static int unmap_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	struct bank_range *range = data;
+	u64 gpa_offset;
+	u64 hva;
+	int ret;
+
+	if (!is_bank_range(bank, range))
+		return 0;
+
+	gpa_offset = range->gpa - bank->guest_phys_addr;
+	hva = (u64)bank->host_addr + gpa_offset;
+
+	BUG_ON(hva < (u64)bank->host_addr);
+	BUG_ON(!bank->memfd);
+
+	ret = _munmap((void *)hva, range->size);
+	if (ret)
+		pr_warning("%s gpa 0x%llx (size: %llu) at hva 0x%llx failed with error %d",
+			 __func__,
+			 (unsigned long long)range->gpa,
+			 (unsigned long long)range->size,
+			 (unsigned long long)hva,
+			 ret);
+
+	/* Do not proceed to trying to unmap the other banks. */
+	return 1;
+}
+
+static int map_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	void *mapping;
+
+	BUG_ON(!bank->memfd);
+
+	pr_debug("%s hva 0x%llx (size: %llu) of memfd %d (offset %llu)",
+		 __func__,
+		 (unsigned long long)bank->host_addr,
+		 (unsigned long long)bank->size,
+		 bank->memfd,
+		 (unsigned long long)bank->memfd_offset);
+
+	mapping = _mmap(bank->host_addr, bank->size, PROT_RW, MAP_SHARED, bank->memfd, bank->memfd_offset);
+	if (!mapping || mapping != bank->host_addr)
+		pr_warning("%s hva 0x%llx (size: %llu) failed with return 0x%llx",
+			   __func__,
+			   (unsigned long long)bank->host_addr,
+			   (unsigned long long)bank->size,
+			   (unsigned long long)mapping);
+	return 0;
+}
+
+static int unmap_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	int ret;
+
+	pr_debug("%s hva 0x%llx (size: %llu)",
+		 __func__,
+		 (unsigned long long)bank->host_addr,
+		 (unsigned long long)bank->size);
+
+	ret = _munmap(bank->host_addr, bank->size);
+	if (ret)
+		pr_warning("%s hva 0x%llx (size: %llu) failed with error %d",
+			   __func__,
+			   (unsigned long long)bank->host_addr,
+			   (unsigned long long)bank->size,
+			   ret);
+	return 0;
+}
+
+void map_guest_range(struct kvm *kvm, u64 gpa, u64 size)
+{
+	struct bank_range range = { .gpa = gpa, .size = size };
+	int ret;
+
+	ret = kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_DEVICE,
+				     map_bank_range, &range);
+
+	if (!ret)
+		pr_warning("%s gpa 0x%llx (size: %llu) found no matches",
+			   __func__,
+			   (unsigned long long)gpa,
+			   (unsigned long long)size);
+}
+
+void unmap_guest_range(struct kvm *kvm, u64 gpa, u64 size)
+{
+	struct bank_range range = { .gpa = gpa, .size = size };
+	int ret;
+
+	ret = kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_DEVICE,
+				     unmap_bank_range, &range);
+
+	if (!ret)
+		pr_warning("%s gpa 0x%llx (size: %llu) found no matches",
+			   __func__,
+			   (unsigned long long)gpa,
+			   (unsigned long long)size);
+
+	return;
+}
+
+void map_guest(struct kvm *kvm)
+{
+	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_DEVICE,
+			       map_bank, NULL);
+}
+
+void unmap_guest_private(struct kvm *kvm)
+{
+	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_PRIVATE, unmap_bank, NULL);
+}
+
 int kvm__recommended_cpus(struct kvm *kvm)
 {
 	int ret;

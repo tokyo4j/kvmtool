@@ -224,6 +224,10 @@ static inline bool kvm__arch_has_cfg_ram_address(void)
 
 void *guest_flat_to_host(struct kvm *kvm, u64 offset);
 u64 host_to_guest_flat(struct kvm *kvm, void *ptr);
+void map_guest_range(struct kvm *kvm, u64 gpa, u64 size);
+void unmap_guest_range(struct kvm *kvm, u64 gpa, u64 size);
+void map_guest(struct kvm *kvm);
+void unmap_guest_private(struct kvm *kvm);
 
 bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 				 const char *kernel_cmdline);
