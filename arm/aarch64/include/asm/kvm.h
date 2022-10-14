@@ -540,6 +540,12 @@ struct reg_mask_range {
 	__u32 reserved[13];
 };
 
+#define ARM_SMCCC_KVM_FUNC_MEM_SHARE		3
+#define ARM_SMCCC_KVM_FUNC_MEM_UNSHARE		4
+
+#define KVM_EXIT_HYPERCALL_VALID_MASK	((1ULL << ARM_SMCCC_KVM_FUNC_MEM_SHARE) |	\
+					 (1ULL << ARM_SMCCC_KVM_FUNC_MEM_UNSHARE))
+
 #endif
 
 #endif /* __ARM_KVM_H__ */

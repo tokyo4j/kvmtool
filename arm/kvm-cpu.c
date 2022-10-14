@@ -143,16 +143,68 @@ void kvm_cpu__delete(struct kvm_cpu *vcpu)
 	free(vcpu);
 }
 
-bool kvm_cpu__handle_exit(struct kvm_cpu *vcpu)
+static bool handle_mem_share(struct kvm_cpu *vcpu)
 {
-	switch (vcpu->kvm_run->exit_reason) {
-	case KVM_EXIT_HYPERCALL:
-		pr_warning("Unhandled exit hypercall: 0x%llx, 0x%llx, 0x%llx, 0x%llx",
+	u64 gpa = vcpu->kvm_run->hypercall.args[0];
+
+	vcpu->kvm_run->hypercall.ret = SMCCC_RET_SUCCESS;
+
+	if (!vcpu->kvm->cfg.pkvm) {
+		pr_warning("%s: non-protected guest memshare request for gpa 0x%llx",
+			   __func__, gpa);
+		return true;
+	}
+
+	map_guest_range(vcpu->kvm, gpa, PAGE_SIZE);
+
+	return true;
+}
+
+static bool handle_mem_unshare(struct kvm_cpu *vcpu)
+{
+	u64 gpa = vcpu->kvm_run->hypercall.args[0];
+
+	vcpu->kvm_run->hypercall.ret = SMCCC_RET_SUCCESS;
+
+	if (!vcpu->kvm->cfg.pkvm) {
+		pr_warning("%s: non-protected guest memunshare request for gpa 0x%llx",
+			   __func__, gpa);
+		return true;
+	}
+
+	unmap_guest_range(vcpu->kvm, gpa, PAGE_SIZE);
+
+	return true;
+}
+
+static bool handle_hypercall(struct kvm_cpu *vcpu)
+{
+	u64 call_nr = vcpu->kvm_run->hypercall.nr;
+
+	switch (call_nr)
+	{
+	case ARM_SMCCC_KVM_FUNC_MEM_SHARE:
+		return handle_mem_share(vcpu);
+	case ARM_SMCCC_KVM_FUNC_MEM_UNSHARE:
+		return handle_mem_unshare(vcpu);
+	default:
+		pr_warning("%s: Unhandled exit hypercall: 0x%llx, 0x%llx, 0x%llx, 0x%llx",
+			   __func__,
 			   vcpu->kvm_run->hypercall.nr,
 			   vcpu->kvm_run->hypercall.ret,
 			   vcpu->kvm_run->hypercall.args[0],
 			   vcpu->kvm_run->hypercall.args[1]);
-		return true;
+		break;
+	}
+
+	return true;
+}
+
+bool kvm_cpu__handle_exit(struct kvm_cpu *vcpu)
+{
+	switch (vcpu->kvm_run->exit_reason) {
+	case KVM_EXIT_HYPERCALL:
+		return handle_hypercall(vcpu);
 	}
 
 	return false;
