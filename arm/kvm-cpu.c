@@ -1,5 +1,6 @@
 #include "kvm/kvm.h"
 #include "kvm/kvm-cpu.h"
+#include "asm/realm.h"
 
 /*
  * Return codes defined in ARM DEN 0070A
@@ -247,4 +248,13 @@ void kvm_cpu__show_page_tables(struct kvm_cpu *vcpu)
 
 void kvm_cpu__arch_unhandled_mmio(struct kvm_cpu *vcpu)
 {
+	struct kvm_vcpu_events events = { };
+
+	if (!kvm__is_realm(vcpu->kvm))
+		return;
+
+	events.exception.ext_dabt_pending = 1;
+
+	if (ioctl(vcpu->vcpu_fd, KVM_SET_VCPU_EVENTS, &events) < 0)
+		die_perror("KVM_SET_VCPU_EVENTS failed");
 }
