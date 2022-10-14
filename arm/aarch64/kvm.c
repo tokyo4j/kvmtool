@@ -163,3 +163,26 @@ void kvm__arch_enable_mte(struct kvm *kvm)
 
 	pr_debug("MTE capability enabled");
 }
+
+void kvm__arch_enable_exit_hypcall(struct kvm *kvm)
+{
+	struct kvm_enable_cap cap = {
+		.cap = KVM_CAP_EXIT_HYPERCALL,
+		.args[0] = KVM_EXIT_HYPERCALL_VALID_MASK,
+	};
+
+	if (kvm->cfg.arch.aarch32_guest) {
+		pr_debug("EXIT HYPERCALL is incompatible with AArch32");
+		return;
+	}
+
+	if (!kvm__supports_extension(kvm, KVM_CAP_EXIT_HYPERCALL)) {
+		pr_debug("EXIT HYPERCALL capability not available");
+		return;
+	}
+
+	if (ioctl(kvm->vm_fd, KVM_ENABLE_CAP, &cap))
+		die_perror("KVM_ENABLE_CAP(KVM_CAP_EXIT_HYPERCALL)");
+
+	pr_debug("EXIT capability enabled");
+}

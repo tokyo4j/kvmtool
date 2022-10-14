@@ -145,6 +145,16 @@ void kvm_cpu__delete(struct kvm_cpu *vcpu)
 
 bool kvm_cpu__handle_exit(struct kvm_cpu *vcpu)
 {
+	switch (vcpu->kvm_run->exit_reason) {
+	case KVM_EXIT_HYPERCALL:
+		pr_warning("Unhandled exit hypercall: 0x%llx, 0x%llx, 0x%llx, 0x%llx",
+			   vcpu->kvm_run->hypercall.nr,
+			   vcpu->kvm_run->hypercall.ret,
+			   vcpu->kvm_run->hypercall.args[0],
+			   vcpu->kvm_run->hypercall.args[1]);
+		return true;
+	}
+
 	return false;
 }
 
