@@ -104,13 +104,9 @@ void die_perror(const char *s)
 	exit(1);
 }
 
-static void *mmap_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
+static u64 get_hugepage_blk_size(const char *hugetlbfs_path)
 {
-	char mpath[PATH_MAX];
-	int fd;
 	struct statfs sfs;
-	void *addr;
-	unsigned long blk_size;
 
 	if (statfs(hugetlbfs_path, &sfs) < 0)
 		die("Can't stat %s", hugetlbfs_path);
@@ -118,10 +114,20 @@ static void *mmap_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 siz
 	if ((unsigned int)sfs.f_type != HUGETLBFS_MAGIC)
 		die("%s is not hugetlbfs!", hugetlbfs_path);
 
-	blk_size = (unsigned long)sfs.f_bsize;
-	if (sfs.f_bsize == 0 || blk_size > size) {
-		die("Can't use hugetlbfs pagesize %ld for mem size %lld",
-			blk_size, (unsigned long long)size);
+	return sfs.f_bsize;
+}
+
+static void *mmap_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
+{
+	char mpath[PATH_MAX];
+	int fd;
+	void *addr;
+	u64 blk_size;
+
+	blk_size = get_hugepage_blk_size(hugetlbfs_path);
+	if (blk_size == 0 || blk_size > size) {
+		die("Can't use hugetlbfs pagesize %lld for mem size %lld",
+			(unsigned long long)blk_size, (unsigned long long)size);
 	}
 
 	kvm->ram_pagesize = blk_size;
