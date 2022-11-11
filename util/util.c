@@ -143,10 +143,17 @@ int memfd_alloc(u64 size, bool hugetlb, u64 blk_size)
 	return fd;
 }
 
-/* This function wraps the decision between hugetlbfs map (if requested) or normal mmap */
-void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
+/*
+ * This function allocates memory aligned to align_sz.
+ * It also wraps the decision between hugetlbfs (if requested) or normal mmap.
+ */
+void *mmap_anon_or_hugetlbfs_align(struct kvm *kvm, const char *hugetlbfs_path,
+				   u64 size, u64 align_sz)
 {
 	u64 blk_size = 0;
+	u64 total_map = size + align_sz;
+	u64 start_off, end_off;
+	void *addr_map, *addr_align;
 	int fd;
 
 	/*
@@ -166,10 +173,38 @@ void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 si
 		kvm->ram_pagesize = getpagesize();
 	}
 
+	/* Create a mapping with room for alignment without allocating. */
+	addr_map = mmap(NULL, total_map, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS,
+			-1, 0);
+	if (addr_map == MAP_FAILED)
+		return MAP_FAILED;
+
 	fd = memfd_alloc(size, hugetlbfs_path, blk_size);
 	if (fd < 0)
 		return MAP_FAILED;
 
+	/* Map the allocated memory in the fd to the specified alignment. */
+	addr_align = (void *)ALIGN((u64)addr_map, align_sz);
+	if (mmap(addr_align, size, PROT_RW, MAP_PRIVATE | MAP_FIXED, fd, 0) ==
+	    MAP_FAILED) {
+		close(fd);
+		return MAP_FAILED;
+	}
+
+	/* Remove the mapping for unused address ranges. */
+	start_off = addr_align - addr_map;
+	if (start_off)
+		munmap(addr_map, start_off);
+
+	end_off = align_sz - start_off;
+	if (end_off)
+		munmap((void *)((u64)addr_align + size), end_off);
+
 	kvm->ram_fd = fd;
-	return mmap(NULL, size, PROT_RW, MAP_PRIVATE, kvm->ram_fd, 0);
+	return addr_align;
+}
+
+void *mmap_anon_or_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
+{
+	return mmap_anon_or_hugetlbfs_align(kvm, hugetlbfs_path, size, 0);
 }
