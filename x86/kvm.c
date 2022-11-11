@@ -177,11 +177,6 @@ void kvm__arch_init(struct kvm *kvm)
 		die_perror("KVM_CREATE_PIT2 ioctl");
 }
 
-void kvm__arch_delete_ram(struct kvm *kvm)
-{
-	munmap(kvm->ram_start, kvm->ram_size);
-}
-
 void kvm__irq_line(struct kvm *kvm, int irq, int level)
 {
 	struct kvm_irq_level irq_level;

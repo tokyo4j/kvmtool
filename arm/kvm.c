@@ -61,11 +61,6 @@ void kvm__init_ram(struct kvm *kvm)
 		 phys_start, phys_start + phys_size - 1, (u64)kvm->ram_start);
 }
 
-void kvm__arch_delete_ram(struct kvm *kvm)
-{
-	munmap(kvm->ram_start, kvm->ram_size);
-}
-
 void kvm__arch_read_term(struct kvm *kvm)
 {
 	serial8250__update_consoles(kvm);

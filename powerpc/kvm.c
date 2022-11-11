@@ -148,11 +148,6 @@ void kvm__arch_init(struct kvm *kvm)
 			 SPAPR_PCI_IO_WIN_SIZE);
 }
 
-void kvm__arch_delete_ram(struct kvm *kvm)
-{
-	munmap(kvm->ram_start, kvm->ram_size);
-}
-
 void kvm__irq_trigger(struct kvm *kvm, int irq)
 {
 	kvm__irq_line(kvm, irq, 1);

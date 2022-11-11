@@ -56,11 +56,6 @@ void kvm__init_ram(struct kvm *kvm)
 	}
 }
 
-void kvm__arch_delete_ram(struct kvm *kvm)
-{
-	munmap(kvm->ram_start, kvm->ram_size);
-}
-
 void kvm__arch_set_cmdline(char *cmdline, bool video)
 {
 

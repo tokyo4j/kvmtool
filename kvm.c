@@ -169,14 +169,19 @@ struct kvm *kvm__new(void)
 	return kvm;
 }
 
+static void kvm__delete_ram(struct kvm *kvm)
+{
+	munmap(kvm->ram_start, kvm->ram_size);
+
+	if (kvm->ram_fd >= 0)
+		close(kvm->ram_fd);
+}
+
 int kvm__exit(struct kvm *kvm)
 {
 	struct kvm_mem_bank *bank, *tmp;
 
-	kvm__arch_delete_ram(kvm);
-
-	if (kvm->ram_fd >= 0)
-		close(kvm->ram_fd);
+	kvm__delete_ram(kvm);
 
 	list_for_each_entry_safe(bank, tmp, &kvm->mem_banks, list) {
 		list_del(&bank->list);
