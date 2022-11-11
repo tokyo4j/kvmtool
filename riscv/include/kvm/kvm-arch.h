@@ -60,13 +60,6 @@ struct kvm;
 
 struct kvm_arch {
 	/*
-	 * We may have to align the guest memory for virtio, so keep the
-	 * original pointers here for munmap.
-	 */
-	void	*ram_alloc_start;
-	u64	ram_alloc_size;
-
-	/*
 	 * Guest addresses for memory layout.
 	 */
 	u64	memory_guest_start;

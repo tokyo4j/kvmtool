@@ -48,7 +48,7 @@ void kvm__init_ram(struct kvm *kvm)
 
 void kvm__arch_delete_ram(struct kvm *kvm)
 {
-	munmap(kvm->arch.ram_alloc_start, kvm->arch.ram_alloc_size);
+	munmap(kvm->ram_start, kvm->ram_size);
 }
 
 void kvm__arch_read_term(struct kvm *kvm)
@@ -77,23 +77,16 @@ void kvm__arch_init(struct kvm *kvm)
 	 * let's go with that.
 	 */
 	kvm->ram_size = min(kvm->cfg.ram_size, (u64)RISCV_MAX_MEMORY(kvm));
-	kvm->arch.ram_alloc_size = kvm->ram_size;
-	kvm->arch.ram_alloc_start = mmap_anon_or_hugetlbfs_align(kvm,
-						kvm->cfg.hugetlbfs_path,
-						kvm->arch.ram_alloc_size,
-						SZ_2M);
+	kvm->ram_start = mmap_anon_or_hugetlbfs_align(kvm,
+						      kvm->cfg.hugetlbfs_path,
+						      kvm->ram_size, SZ_2M);
 
-	if (kvm->arch.ram_alloc_start == MAP_FAILED)
+	if (kvm->ram_start == MAP_FAILED)
 		die("Failed to map %lld bytes for guest memory (%d)",
 		    kvm->arch.ram_alloc_size, errno);
 
-	kvm->ram_start = kvm->arch.ram_alloc_start;
-
-	madvise(kvm->arch.ram_alloc_start, kvm->arch.ram_alloc_size,
-		MADV_MERGEABLE);
-
-	madvise(kvm->arch.ram_alloc_start, kvm->arch.ram_alloc_size,
-		MADV_HUGEPAGE);
+	madvise(kvm->ram_start, kvm->ram_size, MADV_MERGEABLE);
+	madvise(kvm->ram_start, kvm->ram_size, MADV_HUGEPAGE);
 
 	riscv__irqchip_create(kvm);
 }

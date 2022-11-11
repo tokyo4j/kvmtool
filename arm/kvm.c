@@ -27,7 +27,6 @@ bool kvm__arch_cpu_supports_vm(void)
 void kvm__init_ram(struct kvm *kvm)
 {
 	u64 phys_start, phys_size;
-	void *host_mem;
 	int err;
 
 	/*
@@ -37,42 +36,34 @@ void kvm__init_ram(struct kvm *kvm)
 	 * 2M trumps 64K, so let's go with that.
 	 */
 	kvm->ram_size = kvm->cfg.ram_size;
-	kvm->arch.ram_alloc_size = kvm->ram_size;
-	kvm->arch.ram_alloc_start = mmap_anon_or_hugetlbfs_align(kvm,
-						kvm->cfg.hugetlbfs_path,
-						kvm->arch.ram_alloc_size,
-						SZ_2M);
+	kvm->ram_start = mmap_anon_or_hugetlbfs_align(kvm,
+						      kvm->cfg.hugetlbfs_path,
+						      kvm->ram_size, SZ_2M);
 
-	if (kvm->arch.ram_alloc_start == MAP_FAILED)
+	if (kvm->ram_start == MAP_FAILED)
 		die("Failed to map %lld bytes for guest memory (%d)",
-		    kvm->arch.ram_alloc_size, errno);
+		    kvm->ram_size, errno);
 
-	kvm->ram_start = kvm->arch.ram_alloc_start;
-
-	madvise(kvm->arch.ram_alloc_start, kvm->arch.ram_alloc_size,
-		MADV_MERGEABLE);
-
-	madvise(kvm->arch.ram_alloc_start, kvm->arch.ram_alloc_size,
-		MADV_HUGEPAGE);
+	madvise(kvm->ram_start, kvm->ram_size, MADV_MERGEABLE);
+	madvise(kvm->ram_start, kvm->ram_size, MADV_HUGEPAGE);
 
 	phys_start	= kvm->cfg.ram_addr;
 	phys_size	= kvm->ram_size;
-	host_mem	= kvm->ram_start;
 
-	err = kvm__register_ram(kvm, phys_start, phys_size, host_mem);
+	err = kvm__register_ram(kvm, phys_start, phys_size, kvm->ram_start);
 	if (err)
 		die("Failed to register %lld bytes of memory at physical "
 		    "address 0x%llx [err %d]", phys_size, phys_start, err);
 
 	kvm->arch.memory_guest_start = phys_start;
 
-	pr_debug("RAM created at 0x%llx - 0x%llx (host_mem 0x%llx)",
-		 phys_start, phys_start + phys_size - 1, (u64)host_mem);
+	pr_debug("RAM created at 0x%llx - 0x%llx (host ram_start 0x%llx)",
+		 phys_start, phys_start + phys_size - 1, (u64)kvm->ram_start);
 }
 
 void kvm__arch_delete_ram(struct kvm *kvm)
 {
-	munmap(kvm->arch.ram_alloc_start, kvm->arch.ram_alloc_size);
+	munmap(kvm->ram_start, kvm->ram_size);
 }
 
 void kvm__arch_read_term(struct kvm *kvm)
