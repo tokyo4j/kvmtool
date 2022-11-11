@@ -185,7 +185,7 @@ void *mmap_anon_or_hugetlbfs_align(struct kvm *kvm, const char *hugetlbfs_path,
 
 	/* Map the allocated memory in the fd to the specified alignment. */
 	addr_align = (void *)ALIGN((u64)addr_map, align_sz);
-	if (mmap(addr_align, size, PROT_RW, MAP_PRIVATE | MAP_FIXED, fd, 0) ==
+	if (mmap(addr_align, size, PROT_RW, MAP_SHARED | MAP_FIXED, fd, 0) ==
 	    MAP_FAILED) {
 		close(fd);
 		return MAP_FAILED;
