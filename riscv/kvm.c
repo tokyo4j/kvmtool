@@ -78,18 +78,16 @@ void kvm__arch_init(struct kvm *kvm)
 	 */
 	kvm->ram_size = min(kvm->cfg.ram_size, (u64)RISCV_MAX_MEMORY(kvm));
 	kvm->arch.ram_alloc_size = kvm->ram_size;
-	if (!kvm->cfg.hugetlbfs_path)
-		kvm->arch.ram_alloc_size += HUGEPAGE_SIZE;
-	kvm->arch.ram_alloc_start = mmap_anon_or_hugetlbfs(kvm,
+	kvm->arch.ram_alloc_start = mmap_anon_or_hugetlbfs_align(kvm,
 						kvm->cfg.hugetlbfs_path,
-						kvm->arch.ram_alloc_size);
+						kvm->arch.ram_alloc_size,
+						SZ_2M);
 
 	if (kvm->arch.ram_alloc_start == MAP_FAILED)
 		die("Failed to map %lld bytes for guest memory (%d)",
 		    kvm->arch.ram_alloc_size, errno);
 
-	kvm->ram_start = (void *)ALIGN((unsigned long)kvm->arch.ram_alloc_start,
-					SZ_2M);
+	kvm->ram_start = kvm->arch.ram_alloc_start;
 
 	madvise(kvm->arch.ram_alloc_start, kvm->arch.ram_alloc_size,
 		MADV_MERGEABLE);
