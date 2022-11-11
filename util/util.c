@@ -6,6 +6,7 @@
 
 #include <kvm/kvm.h>
 #include <linux/magic.h>	/* For HUGETLBFS_MAGIC */
+#include <linux/memfd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
@@ -119,7 +120,8 @@ static u64 get_hugepage_blk_size(const char *hugetlbfs_path)
 
 static void *mmap_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 size)
 {
-	char mpath[PATH_MAX];
+	const char *name = "kvmtool";
+	unsigned int flags = 0;
 	int fd;
 	void *addr;
 	u64 blk_size;
@@ -130,13 +132,17 @@ static void *mmap_hugetlbfs(struct kvm *kvm, const char *hugetlbfs_path, u64 siz
 			(unsigned long long)blk_size, (unsigned long long)size);
 	}
 
+	if (!is_power_of_two(blk_size))
+		die("Hugepage size must be a power of 2");
+
+	flags |= MFD_HUGETLB;
+	flags |= blk_size << MFD_HUGE_SHIFT;
+
 	kvm->ram_pagesize = blk_size;
 
-	snprintf(mpath, PATH_MAX, "%s/kvmtoolXXXXXX", hugetlbfs_path);
-	fd = mkstemp(mpath);
+	fd = memfd_create(name, flags);
 	if (fd < 0)
-		die("Can't open %s for hugetlbfs map", mpath);
-	unlink(mpath);
+		die_perror("Can't memfd_create for hugetlbfs map");
 	if (ftruncate(fd, size) < 0)
 		die("Can't ftruncate for mem mapping size %lld",
 			(unsigned long long)size);
