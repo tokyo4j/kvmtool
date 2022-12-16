@@ -151,6 +151,8 @@ int memfd_alloc(struct kvm *kvm, size_t size, bool hugetlb, u64 blk_size)
 	if (ftruncate(fd, size) < 0)
 		die("Can't ftruncate for mem mapping size %lld",
 			(unsigned long long)size);
+	if (fallocate(fd, 0, 0, size) < 0)
+		die("Cannot fallocate in memfd_alloc\n");
 
 	return fd;
 }
@@ -200,10 +202,20 @@ void *mmap_anon_or_hugetlbfs_align(struct kvm *kvm, const char *hugetlbfs_path,
 
 	/* Map the allocated memory in the fd to the specified alignment. */
 	addr_align = (void *)ALIGN((u64)addr_map, align_sz);
-	if (mmap(addr_align, size, PROT_RW, MAP_SHARED | MAP_FIXED, fd, 0) ==
-	    MAP_FAILED) {
-		close(fd);
-		return MAP_FAILED;
+	if (kvm->cfg.arch.is_realm) {
+		// We can't map the private_fd so we need anonymous memory instead
+		if (mmap(addr_align, size,
+			 PROT_RW, MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS, -1, 0) ==
+		    MAP_FAILED) {
+			close(fd);
+			return MAP_FAILED;
+		}
+	} else {
+		if (mmap(addr_align, size, PROT_RW, MAP_SHARED | MAP_FIXED, fd, 0) ==
+		    MAP_FAILED) {
+			close(fd);
+			return MAP_FAILED;
+		}
 	}
 
 	/* Remove the mapping for unused address ranges. */
