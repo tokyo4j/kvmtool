@@ -39,6 +39,7 @@ int vcpu_affinity_parser(const struct option *opt, const char *arg, int unset)
 
 void kvm__arch_init_cfg(struct kvm *kvm)
 {
+	kvm->cfg.arch.pmu_cntrs = -1;
 }
 
 static void validate_mem_cfg(struct kvm *kvm)
@@ -61,6 +62,8 @@ static void validate_realm_cfg(struct kvm *kvm)
 			die("--measurement-algo valid only with --realm");
 		if (kvm->cfg.arch.realm_pv)
 			die("--realm-pv valid only with --realm");
+		if (kvm->cfg.arch.pmu_cntrs >= 0)
+			die("--pmu-counters valid only with --realm");
 		return;
 	}
 

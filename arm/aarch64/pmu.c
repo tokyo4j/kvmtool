@@ -42,6 +42,34 @@ static void set_pmu_attr(struct kvm_cpu *vcpu, void *addr, u64 attr)
 	}
 }
 
+static void set_pmu_counters(struct kvm_cpu *vcpu)
+{
+	u64 pmcr;
+	int counters;
+	struct kvm *kvm = vcpu->kvm;
+	struct kvm_one_reg reg = {
+		.id = ARM64_SYS_REG(3, 3, 9, 12, 0),	/* PMCR_EL0 */
+		.addr = (u64)&pmcr,
+	};
+
+	if (kvm->cfg.arch.pmu_cntrs < 0)
+		return;
+
+	if (ioctl(vcpu->vcpu_fd, KVM_GET_ONE_REG, &reg) < 0)
+		die_perror("KVM_GET_ONE_REG (PMCR_EL0)");
+
+	counters = (pmcr >> ARMV8_PMU_PMCR_N_SHIFT) & ARMV8_PMU_PMCR_N_MASK;
+	if (kvm->cfg.arch.pmu_cntrs > counters)
+		die("invalid number of PMU counters");
+
+	pmcr &= ~(ARMV8_PMU_PMCR_N_MASK << ARMV8_PMU_PMCR_N_SHIFT);
+	pmcr |= kvm->cfg.arch.pmu_cntrs << ARMV8_PMU_PMCR_N_SHIFT;
+
+	if (ioctl(vcpu->vcpu_fd, KVM_SET_ONE_REG, &reg) < 0)
+		die_perror("KVM_SET_ONE_REG (PMCR_EL0)");
+}
+
+
 #define SYS_EVENT_SOURCE	"/sys/bus/event_source/devices/"
 /*
  * int is 32 bits and INT_MAX translates in decimal to 2 * 10^9.
@@ -227,6 +255,7 @@ void pmu__generate_fdt_nodes(void *fdt, struct kvm *kvm)
 		if (pmu_id > 0)
 			set_pmu_attr(vcpu, &pmu_id, KVM_ARM_VCPU_PMU_V3_SET_PMU);
 		set_pmu_attr(vcpu, NULL, KVM_ARM_VCPU_PMU_V3_INIT);
+		set_pmu_counters(vcpu);
 	}
 
 	_FDT(fdt_begin_node(fdt, "pmu"));

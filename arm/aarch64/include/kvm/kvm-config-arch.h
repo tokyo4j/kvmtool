@@ -33,8 +33,10 @@ int sve_vl_parser(const struct option *opt, const char *arg, int unset);
 			 "Realm Measurement algorithm, default: sha256"),\
 	OPT_STRING('\0', "realm-pv", &(cfg)->realm_pv,			\
 			"personalisation value",			\
-			"Personalisation Value (only) for Realm VMs"),
-
+			"Personalisation Value (only) for Realm VMs"),  \
+	OPT_INTEGER('\0', "pmu-counters", &(cfg)->pmu_cntrs,		\
+			"Number of PMU counters"			\
+			"(only supported for Realms)"),
 
 #include "arm-common/kvm-config-arch.h"
 
