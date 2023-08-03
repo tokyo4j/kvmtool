@@ -829,7 +829,7 @@ static struct kvm *kvm_cmd_run_init(int argc, const char **argv)
 	if (init_list__init(kvm) < 0)
 		die ("Initialisation failed");
 
-	if (kvm->cfg.pkvm)
+	if (kvm->cfg.restricted_mem)
 		unmap_guest_private(kvm);
 
 	return kvm;
