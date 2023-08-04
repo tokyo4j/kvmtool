@@ -214,14 +214,14 @@ static int set_user_memory_region(struct kvm *kvm, u32 slot, u32 flags,
 	return ret;
 }
 
-static int set_user_memory_region2(struct kvm *kvm, u32 slot, u32 flags,
+static int set_user_memory_guestfd(struct kvm *kvm, u32 slot, u32 flags,
 				   u64 guest_phys, u64 size,
 				   u64 userspace_addr, u32 fd, u64 offset)
 {
 	int ret = 0;
 	struct kvm_userspace_memory_region2 mem = {
 		.slot			= slot,
-		.flags			= flags,
+		.flags			= flags | KVM_MEM_GUEST_MEMFD,
 		.guest_phys_addr	= guest_phys,
 		.memory_size		= size,
 		.userspace_addr		= 0,
@@ -244,7 +244,7 @@ static int set_user_memory_region2(struct kvm *kvm, u32 slot, u32 flags,
 		goto out;
 	}
 
-	/* Inform KVM that the region is protected. */
+	/* Inform KVM that whether the region is protected. */
 	ret = ioctl(kvm->vm_fd, KVM_SET_MEMORY_ATTRIBUTES, &attr);
 	//if (ret || attr.size != 0)
 	if (ret) // TODO: might change
@@ -280,7 +280,7 @@ int kvm__destroy_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 	}
 
 	if (kvm->cfg.restricted_mem && (bank->type & KVM_MEM_TYPE_GUESTFD))
-		ret = set_user_memory_region2(kvm, bank->slot,
+		ret = set_user_memory_guestfd(kvm, bank->slot,
 			KVM_MEM_GUEST_MEMFD, guest_phys, 0, (u64) userspace_addr,
 			0, 0);
 	else
@@ -386,12 +386,8 @@ int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 
 	if (type != KVM_MEM_TYPE_RESERVED) {
 		if (kvm->cfg.restricted_mem && (type & KVM_MEM_TYPE_GUESTFD)) {
-			if (kvm->cfg.pkvm)
-				flags |= KVM_MEM_GUEST_MEMFD;
-
-			ret = set_user_memory_region2(kvm, slot,
-				flags | KVM_MEM_GUEST_MEMFD, guest_phys, size,
-				(u64) userspace_addr, memfd, offset);
+			ret = set_user_memory_guestfd(kvm, slot, flags, guest_phys,
+				size, (u64) userspace_addr, memfd, offset);
 		} else {
 			ret = set_user_memory_region(kvm, slot, flags,
 				guest_phys, size, (u64) userspace_addr);

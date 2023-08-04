@@ -118,14 +118,16 @@ static u64 get_hugepage_blk_size(const char *hugetlbfs_path)
 	return sfs.f_bsize;
 }
 
-static int guest_memfd_create(struct kvm *kvm, uint64_t size, uint64_t flags)
+static int guest_memfd_alloc(struct kvm *kvm, size_t size, bool hugetlb, u64 blk_size)
 {
-       struct kvm_create_guest_memfd gmem = {
-               .size = size,
-               .flags = flags,
-       };
+	struct kvm_create_guest_memfd gmem = {
+		.size = size,
+		.flags = 0,
+	};
 
-      return ioctl(kvm->vm_fd, KVM_CREATE_GUEST_MEMFD, &gmem);
+	BUG_ON(hugetlb);
+
+	return ioctl(kvm->vm_fd, KVM_CREATE_GUEST_MEMFD, &gmem);
 }
 
 int memfd_alloc(struct kvm *kvm, size_t size, bool hugetlb, u64 blk_size)
@@ -141,9 +143,6 @@ int memfd_alloc(struct kvm *kvm, size_t size, bool hugetlb, u64 blk_size)
 		flags |= MFD_HUGETLB;
 		flags |= blk_size << MFD_HUGE_SHIFT;
 	}
-
-	if (kvm->cfg.restricted_mem)
-		return guest_memfd_create(kvm, size, flags);
 
 	fd = memfd_create(name, flags);
 	if (fd < 0)
@@ -192,7 +191,10 @@ void *mmap_anon_or_hugetlbfs_align(struct kvm *kvm, const char *hugetlbfs_path,
 	if (addr_map == MAP_FAILED)
 		return MAP_FAILED;
 
-	fd = memfd_alloc(kvm, size, hugetlbfs_path, blk_size);
+	if (kvm->cfg.restricted_mem)
+		fd = guest_memfd_alloc(kvm, size, hugetlbfs_path, blk_size);
+	else
+		fd = memfd_alloc(kvm, size, hugetlbfs_path, blk_size);
 	if (fd < 0)
 		return MAP_FAILED;
 
