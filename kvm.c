@@ -228,28 +228,11 @@ static int set_user_memory_guestfd(struct kvm *kvm, u32 slot, u32 flags,
 		.guest_memfd_offset	= offset,
 		.guest_memfd		= fd,
 	};
-	struct kvm_memory_attributes attr = {
-			.address = guest_phys,
-			.size = size,
-			.attributes = 0,
-			.flags = 0,
-		};
-
-	if (kvm->cfg.pkvm)
-		attr.attributes = KVM_MEMORY_ATTRIBUTE_PRIVATE;
 
 	ret = ioctl(kvm->vm_fd, KVM_SET_USER_MEMORY_REGION2, &mem);
-	if (ret < 0) {
+	if (ret < 0)
 		ret = -errno;
-		goto out;
-	}
 
-	/* Inform KVM that whether the region is protected. */
-	ret = ioctl(kvm->vm_fd, KVM_SET_MEMORY_ATTRIBUTES, &attr);
-	//if (ret || attr.size != 0)
-	if (ret) // TODO: might change
-		ret = -errno;
-out:
 	return ret;
 }
 
@@ -605,6 +588,35 @@ static int unmap_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
 	return 0;
 }
 
+static int set_guest_bank_private(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	struct kvm_memory_attributes attr = {
+		.address = bank->guest_phys_addr,
+		.size = bank->size,
+		.attributes = KVM_MEMORY_ATTRIBUTE_PRIVATE,
+		.flags = 0,
+	};
+	int ret;
+
+	pr_debug("%s gpa 0x%llx (size: %llu)",
+		 __func__,
+		 (unsigned long long)bank->guest_phys_addr,
+		 (unsigned long long)bank->size);
+
+	ret = ioctl(kvm->vm_fd, KVM_SET_MEMORY_ATTRIBUTES, &attr);
+	//if (ret || attr.size != 0)
+	if (ret) // TODO: might change
+		ret = -errno;
+
+	if (ret)
+		pr_warning("%s hva 0x%llx (size: %llu) failed with error %d",
+			   __func__,
+			   (unsigned long long)bank->host_addr,
+			   (unsigned long long)bank->size,
+			   ret);
+	return 0;
+}
+
 void map_guest_range(struct kvm *kvm, u64 gpa, u64 size)
 {
 	struct bank_range range = { .gpa = gpa, .size = size };
@@ -646,6 +658,11 @@ void map_guest(struct kvm *kvm)
 void unmap_guest_private(struct kvm *kvm)
 {
 	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_GUESTFD, unmap_bank, NULL);
+}
+
+void set_guest_memory_private(struct kvm *kvm)
+{
+	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_GUESTFD, set_guest_bank_private, NULL);
 }
 
 int kvm__recommended_cpus(struct kvm *kvm)
