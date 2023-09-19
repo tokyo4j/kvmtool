@@ -95,6 +95,19 @@ const char *kvm__get_dir(void)
 	return kvm_dir;
 }
 
+static void *_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+{
+	return mmap(addr, len, prot, flags | MAP_FIXED, fd, offset);
+}
+
+static int _munmap(void *addr, size_t len)
+{
+	if (mmap(addr, len, PROT_NONE, MAP_SHARED | MAP_FIXED | MAP_ANON, -1, 0) != MAP_FAILED)
+		return 0;
+
+	return -EFAULT;
+}
+
 bool kvm__supports_vm_extension(struct kvm *kvm, unsigned int extension)
 {
 	static int supports_vm_ext_check = 0;
@@ -171,7 +184,8 @@ struct kvm *kvm__new(void)
 
 static void kvm__delete_ram(struct kvm *kvm)
 {
-	munmap(kvm->ram_start, kvm->ram_size);
+	if (kvm->ram_start)
+		_munmap(kvm->ram_start, kvm->ram_size);
 
 	if (kvm->ram_fd >= 0)
 		close(kvm->ram_fd);
@@ -184,9 +198,21 @@ int kvm__exit(struct kvm *kvm)
 	kvm__delete_ram(kvm);
 
 	list_for_each_entry_safe(bank, tmp, &kvm->mem_banks, list) {
+		if (bank->host_addr)
+			_munmap(bank->host_addr, bank->size);
+
+		if (bank->memfd >= 0)
+			close(bank->memfd);
+
 		list_del(&bank->list);
 		free(bank);
 	}
+
+	if (kvm->vm_fd >= 0)
+		close(kvm->vm_fd);
+
+	if (kvm->sys_fd >= 0)
+		close(kvm->sys_fd);
 
 	free(kvm);
 	return 0;
@@ -447,19 +473,6 @@ int kvm__for_each_mem_bank(struct kvm *kvm, enum kvm_mem_type type,
 	}
 
 	return ret;
-}
-
-static void *_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
-{
-	return mmap(addr, len, prot, flags | MAP_FIXED, fd, offset);
-}
-
-static int _munmap(void *addr, size_t len)
-{
-	if (mmap(addr, len, PROT_NONE, MAP_SHARED | MAP_FIXED | MAP_ANON, -1, 0) != MAP_FAILED)
-		return 0;
-
-	return -EFAULT;
 }
 
 struct bank_range {
