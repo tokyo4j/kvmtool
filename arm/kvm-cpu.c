@@ -1,6 +1,15 @@
 #include "kvm/kvm.h"
 #include "kvm/kvm-cpu.h"
 
+/*
+ * Return codes defined in ARM DEN 0070A
+ * ARM DEN 0070A is now merged/consolidated into ARM DEN 0028 C
+ */
+#define SMCCC_RET_SUCCESS			0
+#define SMCCC_RET_NOT_SUPPORTED			-1
+#define SMCCC_RET_NOT_REQUIRED			-2
+#define SMCCC_RET_INVALID_PARAMETER		-3
+
 static int debug_fd;
 
 void kvm_cpu__set_debug_fd(int fd)
