@@ -229,6 +229,7 @@ void unmap_guest_range(struct kvm *kvm, u64 gpa, u64 size);
 void map_guest(struct kvm *kvm);
 void unmap_guest_private(struct kvm *kvm);
 void set_guest_memory_private(struct kvm *kvm);
+int set_guest_memory_attributes(struct kvm *kvm, u64 gpa, u64 size, u64 attributes);
 
 bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 				 const char *kernel_cmdline);

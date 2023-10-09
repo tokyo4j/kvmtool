@@ -603,31 +603,14 @@ static int unmap_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
 
 static int set_guest_bank_private(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
 {
-	struct kvm_memory_attributes attr = {
-		.address = bank->guest_phys_addr,
-		.size = bank->size,
-		.attributes = KVM_MEMORY_ATTRIBUTE_PRIVATE,
-		.flags = 0,
-	};
-	int ret;
-
 	pr_debug("%s gpa 0x%llx (size: %llu)",
 		 __func__,
 		 (unsigned long long)bank->guest_phys_addr,
 		 (unsigned long long)bank->size);
 
-	ret = ioctl(kvm->vm_fd, KVM_SET_MEMORY_ATTRIBUTES, &attr);
-	//if (ret || attr.size != 0)
-	if (ret) // TODO: might change
-		ret = -errno;
-
-	if (ret)
-		pr_warning("%s hva 0x%llx (size: %llu) failed with error %d",
-			   __func__,
-			   (unsigned long long)bank->host_addr,
-			   (unsigned long long)bank->size,
-			   ret);
-	return 0;
+	return set_guest_memory_attributes(kvm, bank->guest_phys_addr,
+					   bank->size,
+					   KVM_MEMORY_ATTRIBUTE_PRIVATE);
 }
 
 void map_guest_range(struct kvm *kvm, u64 gpa, u64 size)
@@ -676,6 +659,30 @@ void unmap_guest_private(struct kvm *kvm)
 void set_guest_memory_private(struct kvm *kvm)
 {
 	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_GUESTFD, set_guest_bank_private, NULL);
+}
+
+int set_guest_memory_attributes(struct kvm *kvm, u64 gpa, u64 size, u64 attributes)
+{
+	struct kvm_memory_attributes attr = {
+		.address = gpa,
+		.size = size,
+		.attributes = attributes,
+		.flags = 0,
+	};
+	int ret;
+
+	ret = ioctl(kvm->vm_fd, KVM_SET_MEMORY_ATTRIBUTES, &attr);
+	//if (ret || attr.size != 0)
+	if (ret) // TODO: might change
+		ret = -errno;
+
+	if (ret)
+		pr_warning("%s hva 0x%llx (size: %llu) failed with error %d",
+			   __func__,
+			   (unsigned long long)gpa,
+			   (unsigned long long)size,
+			   ret);
+	return ret;
 }
 
 int kvm__recommended_cpus(struct kvm *kvm)
