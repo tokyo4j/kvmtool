@@ -164,6 +164,7 @@ static bool handle_mem_share(struct kvm_cpu *vcpu)
 		return true;
 	}
 
+	set_guest_memory_attributes(vcpu->kvm, gpa, PAGE_SIZE, 0);
 	map_guest_range(vcpu->kvm, gpa, PAGE_SIZE);
 
 	return true;
@@ -182,6 +183,7 @@ static bool handle_mem_unshare(struct kvm_cpu *vcpu)
 	}
 
 	unmap_guest_range(vcpu->kvm, gpa, PAGE_SIZE);
+	set_guest_memory_attributes(vcpu->kvm, gpa, PAGE_SIZE, KVM_MEMORY_ATTRIBUTE_PRIVATE);
 
 	return true;
 }
