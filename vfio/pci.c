@@ -789,10 +789,10 @@ static int vfio_pci_parse_cfg_space(struct vfio_device *vdev)
 			     pdev->hdr.header_type);
 		return -EOPNOTSUPP;
 	}
-
-	if (pdev->hdr.irq_pin)
-		pdev->irq_modes |= VFIO_PCI_IRQ_MODE_INTX;
-
+//
+//	if (pdev->hdr.irq_pin)
+//		pdev->irq_modes |= VFIO_PCI_IRQ_MODE_INTX;
+//
 	vfio_pci_parse_caps(vdev);
 
 	return 0;
