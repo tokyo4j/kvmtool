@@ -669,6 +669,8 @@ static struct kvm *kvm_cmd_run_init(int argc, const char **argv)
 	if (IS_ERR(kvm))
 		return kvm;
 
+	kvm__arch_init_cfg(kvm);
+
 	nr_online_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 	kvm->cfg.custom_rootfs_name = "default";
 	/*

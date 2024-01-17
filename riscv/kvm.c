@@ -18,6 +18,10 @@ u64 kvm__arch_default_ram_address(void)
 	return RISCV_RAM;
 }
 
+void kvm__arch_init_cfg(struct kvm *kvm)
+{
+}
+
 void kvm__arch_validate_cfg(struct kvm *kvm)
 {
 }

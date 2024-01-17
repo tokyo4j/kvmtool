@@ -37,6 +37,10 @@ int vcpu_affinity_parser(const struct option *opt, const char *arg, int unset)
 	return 0;
 }
 
+void kvm__arch_init_cfg(struct kvm *kvm)
+{
+}
+
 static void validate_mem_cfg(struct kvm *kvm)
 {
 	if (kvm->cfg.ram_addr < ARM_MEMORY_AREA) {

@@ -1,5 +1,9 @@
 #include "kvm/kvm.h"
 
+void kvm__arch_init_cfg(struct kvm *kvm)
+{
+}
+
 void kvm__arch_validate_cfg(struct kvm *kvm)
 {
 	if (kvm->cfg.ram_size > ARM_LOMAP_MAX_MEMORY) {
