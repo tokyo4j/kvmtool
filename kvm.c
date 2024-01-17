@@ -55,6 +55,7 @@ const char *kvm_exit_reasons[] = {
 #ifdef CONFIG_PPC64
 	DEFINE_KVM_EXIT_REASON(KVM_EXIT_PAPR_HCALL),
 #endif
+	DEFINE_KVM_EXIT_REASON(KVM_EXIT_MEMORY_FAULT),
 };
 
 static int pause_event;
@@ -250,7 +251,7 @@ static int set_user_memory_guestfd(struct kvm *kvm, u32 slot, u32 flags,
 		.flags			= flags | KVM_MEM_GUEST_MEMFD,
 		.guest_phys_addr	= guest_phys,
 		.memory_size		= size,
-		.userspace_addr		= 0,
+		.userspace_addr		= userspace_addr,
 		.guest_memfd_offset	= offset,
 		.guest_memfd		= fd,
 	};

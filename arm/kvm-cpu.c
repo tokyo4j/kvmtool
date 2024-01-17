@@ -211,11 +211,31 @@ static bool handle_hypercall(struct kvm_cpu *vcpu)
 	return true;
 }
 
+static bool handle_memoryfault(struct kvm_cpu *vcpu)
+{
+	u64 flags = vcpu->kvm_run->memory_fault.flags;
+	u64 gpa = vcpu->kvm_run->memory_fault.gpa;
+	u64 size = vcpu->kvm_run->memory_fault.size;
+
+	if (flags & KVM_MEMORY_EXIT_FLAG_PRIVATE) {
+		unmap_guest_range(vcpu->kvm, gpa, size);
+		set_guest_memory_attributes(vcpu->kvm, gpa, size,
+					    KVM_MEMORY_ATTRIBUTE_PRIVATE);
+	} else {
+		set_guest_memory_attributes(vcpu->kvm, gpa, size, 0);
+		map_guest_range(vcpu->kvm, gpa, size);
+	}
+
+	return true;
+}
+
 bool kvm_cpu__handle_exit(struct kvm_cpu *vcpu)
 {
 	switch (vcpu->kvm_run->exit_reason) {
 	case KVM_EXIT_HYPERCALL:
 		return handle_hypercall(vcpu);
+	case KVM_EXIT_MEMORY_FAULT:
+		return handle_memoryfault(vcpu);
 	}
 
 	return false;
