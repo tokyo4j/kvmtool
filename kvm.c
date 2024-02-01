@@ -517,7 +517,10 @@ static int map_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *data
 	BUG_ON(hva < (u64)bank->host_addr);
 	BUG_ON(!bank->memfd);
 
-	mapping = _mmap((void *)hva, range->size, PROT_RW, MAP_SHARED, bank->memfd, map_offset);
+	if (kvm->cfg.pkvm)
+		mapping = _mmap((void *)hva, range->size, PROT_RW, MAP_SHARED, bank->memfd, map_offset);
+	else
+		mapping = _mmap((void*) hva, range->size, PROT_RW, MAP_SHARED | MAP_ANON, -1, 0);
 	if (mapping == MAP_FAILED || mapping != (void *)hva)
 		pr_warning("%s gpa 0x%llx (size: %llu) at hva 0x%llx failed with mapping 0x%llx",
 			   __func__,
