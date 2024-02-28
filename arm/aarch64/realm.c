@@ -117,7 +117,7 @@ static void realm_populate(struct kvm *kvm, struct realm_ram_region *region)
 void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
 				unsigned long file_size)
 {
-	struct realm_ram_region *new_region;
+	struct realm_ram_region *new_region, *next;
 
 	new_region = calloc(1, sizeof(*new_region));
 	if (!new_region)
@@ -126,7 +126,12 @@ void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
 	new_region->start = ALIGN_DOWN(start, SZ_64K);
 	new_region->file_end = ALIGN(start + file_size, SZ_64K);
 
-	list_add_tail(&new_region->list, &realm_ram_regions);
+	/* Keep the list sorted */
+	list_for_each_entry(next, &realm_ram_regions, list) {
+		if (next->start > new_region->start)
+			break;
+	}
+	list_add_tail(&new_region->list, &next->list);
 }
 
 static void kvm_arm_realm_activate_realm(struct kvm *kvm)
