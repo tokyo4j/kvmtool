@@ -102,7 +102,30 @@ static struct psci_fns psci_0_2_aarch64_fns = {
 	.migrate = PSCI_0_2_FN64_MIGRATE,
 };
 
-static int setup_fdt(struct kvm *kvm)
+static int load_dtb(const char *filename, void *dest)
+{
+	ssize_t sz;
+	int fd = open(filename, O_RDONLY);
+
+	if (fd < 0) {
+		perror("cannot open DTB");
+		return -1;
+	}
+
+	sz = read_file(fd, dest, FDT_MAX_SIZE);
+	if (sz < 0) {
+		perror("cannot load DTB");
+		close(fd);
+		return -1;
+	}
+
+	pr_debug("Loaded DTB (%zd bytes)\n", sz);
+
+	close(fd);
+	return 0;
+}
+
+static int create_dtb(struct kvm *kvm, void *fdt_dest)
 {
 	struct device_header *dev_hdr;
 	u8 staging_fdt[FDT_MAX_SIZE];
@@ -111,9 +134,7 @@ static int setup_fdt(struct kvm *kvm)
 		cpu_to_fdt64(kvm->ram_size),
 	};
 	struct psci_fns *fns;
-	void *fdt		= staging_fdt;
-	void *fdt_dest		= guest_flat_to_host(kvm,
-						     kvm->arch.dtb_guest_start);
+	void *fdt = staging_fdt;
 	void (*generate_mmio_fdt_nodes)(void *, struct device_header *,
 					void (*)(void *, u8, enum irq_type));
 	void (*generate_cpu_peripheral_fdt_nodes)(void *, struct kvm *)
@@ -258,6 +279,21 @@ static int setup_fdt(struct kvm *kvm)
 
 	if (kvm->cfg.arch.dump_dtb_filename)
 		dump_fdt(kvm->cfg.arch.dump_dtb_filename, fdt_dest);
+	return 0;
+}
+
+static int setup_fdt(struct kvm *kvm)
+{
+	int ret;
+	void *fdt_dest = guest_flat_to_host(kvm, kvm->arch.dtb_guest_start);
+
+	/* If the user provided a DTB, load it as is */
+	if (kvm->cfg.arch.dtb_filename)
+		ret = load_dtb(kvm->cfg.arch.dtb_filename, fdt_dest);
+	else
+		ret = create_dtb(kvm, fdt_dest);
+	if (ret)
+		return ret;
 
 	if (kvm__is_realm(kvm))
 		kvm_arm_realm_populate_ram(kvm, kvm->arch.dtb_guest_start,

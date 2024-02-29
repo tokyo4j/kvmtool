@@ -5,6 +5,7 @@
 
 struct kvm_config_arch {
 	const char	*dump_dtb_filename;
+	const char	*dtb_filename;
 	const char	*vcpu_affinity;
 	const char	*measurement_algo;
 	const char	*realm_pv;
@@ -29,6 +30,8 @@ int irqchip_parser(const struct option *opt, const char *arg, int unset);
 	ARM_OPT_ARCH_RUN(cfg)							\
 	OPT_STRING('\0', "dump-dtb", &(cfg)->dump_dtb_filename,			\
 		   ".dtb file", "Dump generated .dtb to specified file"),	\
+	OPT_STRING('\0', "dtb", &(cfg)->dtb_filename,				\
+		   ".dtb file", "Load .dtb from specified file unmodified"),	\
 	OPT_UINTEGER('\0', "override-bad-firmware-cntfrq", &(cfg)->force_cntfrq,\
 		     "Specify Generic Timer frequency in guest DT to "		\
 		     "work around buggy secure firmware *Firmware should be "	\
