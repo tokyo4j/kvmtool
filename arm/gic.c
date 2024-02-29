@@ -297,7 +297,7 @@ int gic__create(struct kvm *kvm, enum irqchip_type type)
 /*
  * Sets the number of used interrupts and finalizes the GIC init explicitly.
  */
-static int gic__init_gic(struct kvm *kvm)
+int gic__init_gic(struct kvm *kvm)
 {
 	int ret;
 
@@ -341,7 +341,6 @@ static int gic__init_gic(struct kvm *kvm)
 
 	return irq__setup_irqfd_lines(kvm);
 }
-late_init(gic__init_gic)
 
 void gic__generate_fdt_nodes(void *fdt, enum irqchip_type type)
 {

@@ -9,6 +9,7 @@
 struct kvm;
 static inline void kvm__arch_enable_mte(struct kvm *kvm) {}
 static inline void kvm__arch_enable_exit_hypcall(struct kvm *kvm) {}
+static inline int kvm__arch_enable_pmu(struct kvm *kvm) { return 0; }
 
 #define MAX_PAGE_SIZE	SZ_4K
 

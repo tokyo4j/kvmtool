@@ -139,6 +139,17 @@ void kvm__arch_init(struct kvm *kvm)
 	kvm__arch_enable_exit_hypcall(kvm);
 }
 
+static int kvm__arch_late_init(struct kvm *kvm)
+{
+	int ret = gic__init_gic(kvm);
+
+	if (ret < 0)
+		return ret;
+
+	return kvm__arch_enable_pmu(kvm);
+}
+late_init(kvm__arch_late_init);
+
 #define FDT_ALIGN	SZ_2M
 #define INITRD_ALIGN	4
 bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,

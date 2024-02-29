@@ -33,6 +33,7 @@ enum irqchip_type {
 
 struct kvm;
 
+int gic__init_gic(struct kvm *kvm);
 int gic__alloc_irqnum(void);
 int gic__create(struct kvm *kvm, enum irqchip_type type);
 int gic__create_gicv2m_frame(struct kvm *kvm, u64 msi_frame_addr);
