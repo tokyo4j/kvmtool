@@ -129,7 +129,7 @@ static void gicv2m_mmio_callback(struct kvm_cpu *vcpu, u64 addr, u8 *data,
 int gic__create_gicv2m_frame(struct kvm *kvm, u64 base)
 {
 	int i;
-	int irq = irq__alloc_line();
+	int irq = irq__alloc_line(IRQ_RANGE_GICV2M);
 
 	v2m = (struct gicv2m_chip) {
 		.first_spi	= irq,	/* Includes GIC_SPI_IRQ_BASE */
@@ -144,7 +144,7 @@ int gic__create_gicv2m_frame(struct kvm *kvm, u64 base)
 
 	v2m.spis[0] = -1;
 	for (i = 1; i < v2m.num_spis; i++) {
-		irq__alloc_line();
+		irq__alloc_line(IRQ_RANGE_GICV2M);
 		v2m.spis[i] = -1;
 	}
 

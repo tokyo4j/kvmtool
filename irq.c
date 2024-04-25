@@ -18,12 +18,13 @@ struct msi_routing_ops *msi_routing_ops = &irq__default_routing_ops;
 
 struct kvm_irq_routing *irq_routing = NULL;
 
-int irq__alloc_line(void)
+/* Architectures may implement their own IRQ map */
+int __attribute__((weak)) irq__alloc_line(enum irq_range range)
 {
 	return next_line++;
 }
 
-int irq__get_nr_allocated_lines(void)
+int __attribute__((weak)) irq__get_nr_allocated_lines(void)
 {
 	return next_line - KVM_IRQ_OFFSET;
 }

@@ -12,6 +12,15 @@
 
 struct kvm;
 
+enum irq_range {
+	IRQ_RANGE_SERIAL,
+	IRQ_RANGE_MMIO,
+	IRQ_RANGE_PCI,
+	IRQ_RANGE_GICV2M,
+
+	IRQ_RANGE_MAX,
+};
+
 struct msi_routing_ops {
 	int (*update_route)(struct kvm *kvm, struct kvm_irq_routing_entry *);
 	bool (*can_signal_msi)(struct kvm *kvm);
@@ -23,7 +32,7 @@ extern struct msi_routing_ops *msi_routing_ops;
 extern struct kvm_irq_routing *irq_routing;
 extern int next_gsi;
 
-int irq__alloc_line(void);
+int irq__alloc_line(enum irq_range range);
 int irq__get_nr_allocated_lines(void);
 
 int irq__init(struct kvm *kvm);

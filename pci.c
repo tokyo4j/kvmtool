@@ -58,7 +58,7 @@ int pci__assign_irq(struct pci_device_header *pci_hdr)
 	 * with A# for our single function devices.
 	 */
 	pci_hdr->irq_pin	= 1;
-	pci_hdr->irq_line	= irq__alloc_line();
+	pci_hdr->irq_line	= irq__alloc_line(IRQ_RANGE_PCI);
 
 	if (!pci_hdr->irq_type)
 		pci_hdr->irq_type = IRQ_TYPE_LEVEL_HIGH;

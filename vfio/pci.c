@@ -1357,6 +1357,8 @@ static int vfio_pci_configure_dev_irqs(struct kvm *kvm, struct vfio_device *vdev
 	int ret = 0;
 	struct vfio_pci_device *pdev = &vdev->pci;
 
+	pci__assign_irq(&vdev->pci.hdr);
+
 	if (pdev->irq_modes & VFIO_PCI_IRQ_MODE_MSIX) {
 		pdev->msix.info = (struct vfio_irq_info) {
 			.argsz = sizeof(pdev->msix.info),
@@ -1378,8 +1380,6 @@ static int vfio_pci_configure_dev_irqs(struct kvm *kvm, struct vfio_device *vdev
 	}
 
 	if (pdev->irq_modes & VFIO_PCI_IRQ_MODE_INTX) {
-		pci__assign_irq(&vdev->pci.hdr);
-
 		ret = vfio_pci_init_intx(kvm, vdev);
 		if (ret)
 			return ret;

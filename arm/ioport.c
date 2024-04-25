@@ -3,5 +3,5 @@
 
 void ioport__map_irq(u8 *irq)
 {
-	*irq = irq__alloc_line();
+	*irq = irq__alloc_line(IRQ_RANGE_SERIAL);
 }

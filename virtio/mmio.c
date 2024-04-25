@@ -180,7 +180,7 @@ int virtio_mmio_init(struct kvm *kvm, void *dev, struct virtio_device *vdev,
 		.data		= generate_virtio_mmio_fdt_node,
 	};
 
-	vmmio->irq = irq__alloc_line();
+	vmmio->irq = irq__alloc_line(IRQ_RANGE_MMIO);
 
 	r = device__register(&vmmio->dev_hdr);
 	if (r < 0) {
