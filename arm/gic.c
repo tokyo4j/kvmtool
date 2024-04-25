@@ -5,6 +5,8 @@
 
 #include "arm-common/gic.h"
 
+#include <assert.h>
+
 #include <linux/byteorder.h>
 #include <linux/kernel.h>
 #include <linux/kvm.h>
@@ -27,6 +29,42 @@ struct kvm_irqfd_line {
 };
 
 static LIST_HEAD(irqfd_lines);
+
+static int irq_lines[IRQ_RANGE_MAX] = {
+	[IRQ_RANGE_SERIAL] = GIC_SPI_BASE_SERIAL,
+	[IRQ_RANGE_MMIO] = GIC_SPI_BASE_MMIO,
+	[IRQ_RANGE_PCI] = GIC_SPI_BASE_PCI,
+	[IRQ_RANGE_GICV2M] = GIC_SPI_BASE_V2M,
+};
+
+int irq__alloc_line(enum irq_range range)
+{
+	assert(range < IRQ_RANGE_MAX);
+	int *lines = &irq_lines[range];
+
+	switch (range) {
+	case IRQ_RANGE_SERIAL:
+		assert(*lines < GIC_SPI_BASE_SERIAL + GIC_NUM_SERIAL);
+		break;
+	case IRQ_RANGE_PCI:
+		assert(*lines < GIC_SPI_BASE_PCI +  GIC_NUM_PCI);
+		break;
+	case IRQ_RANGE_MMIO:
+		assert(*lines < GIC_SPI_BASE_MMIO + GIC_NUM_MMIO);
+		break;
+	case IRQ_RANGE_GICV2M:
+		assert(*lines < GIC_SPI_BASE_V2M + GIC_NUM_V2M);
+		break;
+	default:
+		assert(0);
+	}
+	return (*lines)++;
+}
+
+int irq__get_nr_allocated_lines(void)
+{
+	return GIC_SPI_IRQ_MAX - GIC_SPI_IRQ_BASE;
+}
 
 int irqchip_parser(const struct option *opt, const char *arg, int unset)
 {

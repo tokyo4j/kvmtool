@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "kvm/devices.h"
 #include "kvm/fdt.h"
 #include "kvm/kvm.h"
@@ -97,6 +99,7 @@ void pci__generate_fdt_nodes(void *fdt, struct kvm *kvm)
 			continue;
 		}
 
+		assert(irq - GIC_SPI_BASE_PCI == dev_num);
 		*entry = (struct of_interrupt_map_entry) {
 			.pci_irq_mask = {
 				.pci_addr = {

@@ -133,7 +133,7 @@ int gic__create_gicv2m_frame(struct kvm *kvm, u64 base)
 
 	v2m = (struct gicv2m_chip) {
 		.first_spi	= irq,	/* Includes GIC_SPI_IRQ_BASE */
-		.num_spis	= 64,	/* arbitrary */
+		.num_spis	= GIC_NUM_V2M,
 		.base		= base,
 		.size		= KVM_VGIC_V2M_SIZE,
 	};

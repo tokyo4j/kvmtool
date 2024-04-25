@@ -23,6 +23,22 @@
 
 #define KVM_VGIC_V2M_SIZE		0x1000
 
+/* Fixed SPI map */
+#define GIC_SPI_BASE_SERIAL		(GIC_SPI_IRQ_BASE)
+#define GIC_SPI_BASE_MMIO		(GIC_SPI_BASE_SERIAL + GIC_NUM_SERIAL)
+#define GIC_SPI_BASE_PCI		(GIC_SPI_BASE_MMIO + GIC_NUM_MMIO)
+#define GIC_SPI_BASE_V2M		(GIC_SPI_BASE_PCI + GIC_NUM_PCI)
+#define GIC_SPI_IRQ_MAX			(GIC_SPI_BASE_V2M + GIC_NUM_V2M)
+
+#define GIC_NUM_SERIAL			4
+#define GIC_NUM_MMIO			60
+/*
+ * Only space for one bus at the moment. Supporting more will require
+ * multiplexing the lines.
+ */
+#define GIC_NUM_PCI			32
+#define GIC_NUM_V2M			64
+
 enum irqchip_type {
 	IRQCHIP_AUTO,
 	IRQCHIP_GICV2,
