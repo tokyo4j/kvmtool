@@ -126,4 +126,7 @@ void vfio_unmap_region(struct kvm *kvm, struct vfio_region *region);
 int vfio_pci_setup_device(struct kvm *kvm, struct vfio_device *device);
 void vfio_pci_teardown_device(struct kvm *kvm, struct vfio_device *vdev);
 
+int vfio_map_mem_range(struct kvm *kvm, __u64 host_addr, __u64 iova, __u64 size);
+int vfio_unmap_mem_range(struct kvm *kvm, __u64 iova, __u64 size);
+
 #endif /* KVM__VFIO_H */

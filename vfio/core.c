@@ -364,15 +364,15 @@ static int vfio_get_iommu_type(void)
 	return -ENODEV;
 }
 
-static int vfio_map_mem_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+int vfio_map_mem_range(struct kvm *kvm, __u64 host_addr, __u64 iova, __u64 size)
 {
 	int ret = 0;
 	struct vfio_iommu_type1_dma_map dma_map = {
 		.argsz	= sizeof(dma_map),
 		.flags	= VFIO_DMA_MAP_FLAG_READ | VFIO_DMA_MAP_FLAG_WRITE,
-		.vaddr	= (unsigned long)bank->host_addr,
-		.iova	= (u64)bank->guest_phys_addr,
-		.size	= bank->size,
+		.vaddr	= host_addr,
+		.iova	= iova,
+		.size	= size,
 	};
 
 	/* Map the guest memory for DMA (i.e. provide isolation) */
@@ -385,17 +385,27 @@ static int vfio_map_mem_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *d
 	return ret;
 }
 
-static int vfio_unmap_mem_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+int vfio_unmap_mem_range(struct kvm *kvm, __u64 iova, __u64 size)
 {
 	struct vfio_iommu_type1_dma_unmap dma_unmap = {
 		.argsz = sizeof(dma_unmap),
-		.size = bank->size,
-		.iova = bank->guest_phys_addr,
+		.size = size,
+		.iova = iova,
 	};
 
 	ioctl(vfio_container, VFIO_IOMMU_UNMAP_DMA, &dma_unmap);
 
 	return 0;
+}
+
+static int vfio_map_mem_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	return vfio_map_mem_range(kvm, (u64)bank->host_addr, bank->guest_phys_addr, bank->size);
+}
+
+static int vfio_unmap_mem_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	return vfio_unmap_mem_range(kvm, bank->guest_phys_addr, bank->size);
 }
 
 static int vfio_configure_reserved_regions(struct kvm *kvm,

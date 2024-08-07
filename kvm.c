@@ -530,6 +530,8 @@ static int map_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *data
 			   (unsigned long long)hva,
 			   (unsigned long long)mapping);
 
+	if (kvm->cfg.num_vfio_devices)
+		vfio_map_mem_range(kvm, hva, range->gpa, range->size);
 	/* Do not proceed to trying to map the other banks. */
 	return 1;
 }
@@ -549,6 +551,10 @@ static int unmap_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *da
 
 	BUG_ON(hva < (u64)bank->host_addr);
 	BUG_ON(!bank->memfd);
+
+	/* Calling this here to keep it consistent with vfio_map_mem_bank_range() */
+	if (kvm->cfg.num_vfio_devices)
+		vfio_unmap_mem_range(kvm, range->gpa, range->size);
 
 	ret = _munmap((void *)hva, range->size);
 	if (ret)
