@@ -228,6 +228,12 @@ static bool handle_memoryfault(struct kvm_cpu *vcpu)
 	} else {
 		set_guest_memory_attributes(vcpu->kvm, gpa, size, 0);
 		map_guest_range(vcpu->kvm, gpa, size);
+		/*
+   		 * private kvm does in-place conversion of memfd pages to non secure
+		 * punch hole so that we free the memfd pages otherwise.
+		 */
+		if (!vcpu->kvm->cfg.pkvm)
+			guest_memfd_punch_hole(vcpu->kvm, gpa, size);
 	}
 
 	return true;

@@ -683,6 +683,50 @@ void unmap_guest_range(struct kvm *kvm, u64 gpa, u64 size)
 	return;
 }
 
+static int memfd_punch_hole_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	struct bank_range *range = data;
+	u64 gpa_offset;
+	u64 start;
+	int ret;
+
+	if (!is_bank_range(bank, range))
+		return 0;
+
+	gpa_offset = range->gpa - bank->guest_phys_addr;
+	start = bank->memfd_offset + gpa_offset;
+
+	BUG_ON(!bank->memfd);
+
+	ret = fallocate(bank->memfd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+			start, range->size);
+	if (ret)
+		pr_warning("%s gpa 0x%llx (size: %llu) failed with error %d",
+			 __func__,
+			 (unsigned long long)range->gpa,
+			 (unsigned long long)range->size,
+			 ret);
+
+	/* Do not proceed to trying to unmap the other banks. */
+	return 1;
+}
+
+
+void guest_memfd_punch_hole(struct kvm *kvm, u64 gpa, u64 size)
+{
+	struct bank_range range = { .gpa = gpa, .size = size };
+	int ret;
+
+	ret = kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_DEVICE,
+				     memfd_punch_hole_bank_range, &range);
+
+	if (!ret)
+		pr_warning("%s gpa 0x%llx (size: %llu) found no matches",
+			   __func__,
+			   (unsigned long long)gpa,
+			   (unsigned long long)size);
+}
+
 void map_guest(struct kvm *kvm)
 {
 	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_DEVICE,

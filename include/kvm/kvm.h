@@ -238,6 +238,8 @@ int set_guest_memory_attributes(struct kvm *kvm, u64 gpa, u64 size, u64 attribut
 bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 				 const char *kernel_cmdline);
 
+void guest_memfd_punch_hole(struct kvm *kvm, u64 gpa, u64 size);
+
 #define add_read_only(type, str)					\
 	(((type) & KVM_MEM_TYPE_READONLY) ? str " (read-only)" : str)
 static inline const char *kvm_mem_type_to_string(enum kvm_mem_type type)
