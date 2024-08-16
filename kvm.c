@@ -623,6 +623,34 @@ static int set_guest_bank_private(struct kvm *kvm, struct kvm_mem_bank *bank, vo
 					   KVM_MEMORY_ATTRIBUTE_PRIVATE);
 }
 
+static int __validate_memfd_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
+{
+	struct bank_range *range = data;
+
+	if (!is_bank_range(bank, range))
+		return 0;
+
+	/* Range is not with memfd backing. */
+	if (!bank->memfd)
+		return -EINVAL;;
+
+	/* Break the mem bank iteration because we
+	 * found the overlapping range and it is valid.
+	 */
+	return 1;
+}
+
+bool validate_memfd_range(struct kvm *kvm, u64 gpa, u64 size, u64 flags)
+{
+	struct bank_range range = { .gpa = gpa, .size = size };
+	int ret;
+
+	/* Select only memfd backed range, otherwise force a VMM panic.*/
+	ret = kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_DEVICE,
+			     __validate_memfd_bank_range, &range);
+	return ret != -EINVAL;
+}
+
 void map_guest_range(struct kvm *kvm, u64 gpa, u64 size)
 {
 	struct bank_range range = { .gpa = gpa, .size = size };

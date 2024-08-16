@@ -227,6 +227,7 @@ static inline bool kvm__arch_has_cfg_ram_address(void)
 
 void *guest_flat_to_host(struct kvm *kvm, u64 offset);
 u64 host_to_guest_flat(struct kvm *kvm, void *ptr);
+bool validate_memfd_range(struct kvm *kvm, u64 gpa, u64 size, u64 flags);
 void map_guest_range(struct kvm *kvm, u64 gpa, u64 size);
 void unmap_guest_range(struct kvm *kvm, u64 gpa, u64 size);
 void map_guest(struct kvm *kvm);

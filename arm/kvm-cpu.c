@@ -218,6 +218,9 @@ static bool handle_memoryfault(struct kvm_cpu *vcpu)
 	u64 gpa = vcpu->kvm_run->memory_fault.gpa;
 	u64 size = vcpu->kvm_run->memory_fault.size;
 
+	if (!validate_memfd_range(vcpu->kvm, gpa, size, flags))
+		return false;
+
 	if (flags & KVM_MEMORY_EXIT_FLAG_PRIVATE) {
 		unmap_guest_range(vcpu->kvm, gpa, size);
 		set_guest_memory_attributes(vcpu->kvm, gpa, size,
