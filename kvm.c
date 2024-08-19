@@ -279,12 +279,12 @@ int kvm__destroy_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 		goto out;
 	}
 
-	if (kvm->cfg.restricted_mem && (bank->type & KVM_MEM_TYPE_PRIVATE))
-		ret = set_user_memory_region2(kvm->vm_fd, bank->slot,
+	if (kvm->cfg.restricted_mem && (bank->type & KVM_MEM_TYPE_GUESTFD))
+		ret = set_user_memory_region2(kvm, bank->slot,
 			KVM_MEM_GUEST_MEMFD, guest_phys, 0, (u64) userspace_addr,
 			0, 0);
 	else
-		ret = set_user_memory_region(kvm->vm_fd, bank->slot, 0,
+		ret = set_user_memory_region(kvm, bank->slot, 0,
 			guest_phys, 0, (u64) userspace_addr);
 	if (ret < 0)
 		goto out;
@@ -383,13 +383,17 @@ int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size,
 		flags |= KVM_MEM_READONLY;
 
 	if (type != KVM_MEM_TYPE_RESERVED) {
-		if (kvm->cfg.restricted_mem && (type & KVM_MEM_TYPE_PRIVATE))
-			ret = set_user_memory_region2(kvm->vm_fd, slot,
+		if (kvm->cfg.restricted_mem && (type & KVM_MEM_TYPE_GUESTFD)) {
+			if (kvm->cfg.pkvm)
+				flags |= KVM_MEM_GUEST_MEMFD;
+
+			ret = set_user_memory_region2(kvm, slot,
 				flags | KVM_MEM_GUEST_MEMFD, guest_phys, size,
 				(u64) userspace_addr, memfd, offset);
-		else
-			ret = set_user_memory_region(kvm->vm_fd, slot, flags,
+		} else {
+			ret = set_user_memory_region(kvm, slot, flags,
 				guest_phys, size, (u64) userspace_addr);
+		}
 		if (ret < 0)
 			goto out;
 	}
