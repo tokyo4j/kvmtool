@@ -55,13 +55,13 @@ enum kvm_mem_type {
 	KVM_MEM_TYPE_DEVICE	= 1 << 1,
 	KVM_MEM_TYPE_RESERVED	= 1 << 2,
 	KVM_MEM_TYPE_READONLY	= 1 << 3,
-	KVM_MEM_TYPE_PRIVATE	= 1 << 4,
+	KVM_MEM_TYPE_GUESTFD	= 1 << 4,
 
 	KVM_MEM_TYPE_ALL	= KVM_MEM_TYPE_RAM
 				| KVM_MEM_TYPE_DEVICE
 				| KVM_MEM_TYPE_RESERVED
 				| KVM_MEM_TYPE_READONLY
-				| KVM_MEM_TYPE_PRIVATE
+				| KVM_MEM_TYPE_GUESTFD
 };
 
 struct kvm_ext {
@@ -136,7 +136,7 @@ static inline int kvm__register_ram(struct kvm *kvm, u64 guest_phys, u64 size,
 				    void *userspace_addr, int memfd, u64 offset)
 {
 	return kvm__register_mem(kvm, guest_phys, size, userspace_addr, memfd,
-				 offset, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_PRIVATE);
+				 offset, KVM_MEM_TYPE_RAM|KVM_MEM_TYPE_GUESTFD);
 }
 
 static inline int kvm__register_shared_ram(struct kvm *kvm, u64 guest_phys,
