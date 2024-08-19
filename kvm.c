@@ -649,7 +649,7 @@ void map_guest(struct kvm *kvm)
 
 void unmap_guest_private(struct kvm *kvm)
 {
-	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_PRIVATE, unmap_bank, NULL);
+	kvm__for_each_mem_bank(kvm, KVM_MEM_TYPE_GUESTFD, unmap_bank, NULL);
 }
 
 int kvm__recommended_cpus(struct kvm *kvm)
