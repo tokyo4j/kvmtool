@@ -64,6 +64,17 @@ enum kvm_mem_type {
 				| KVM_MEM_TYPE_GUESTFD
 };
 
+/* Type of image loaded into guest memory */
+enum kvm_image_type {
+	KVM_IMAGE_TYPE_KERNEL,
+	KVM_IMAGE_TYPE_INITRD,
+	KVM_IMAGE_TYPE_FIRMWARE,
+	KVM_IMAGE_TYPE_DTB,
+	KVM_IMAGE_TYPE_EVENT_LOG,
+
+	KVM_IMAGE_TYPE_MAX,
+};
+
 struct kvm_ext {
 	const char *name;
 	int code;

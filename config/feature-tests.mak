@@ -206,3 +206,13 @@ int main(void)
 	return 0;
 }
 endef
+
+define SOURCE_CRYPTO
+#include <openssl/evp.h>
+
+int main(void)
+{
+	EVP_MD_CTX *ctx = EVP_MD_CTX_new();
+	return 0;
+}
+endef

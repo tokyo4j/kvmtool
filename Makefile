@@ -264,6 +264,15 @@ else
 	endif
 endif
 
+ifeq ($(call try-build,$(SOURCE_CRYPTO),$(CFLAGS),$(LDFLAGS) -lcrypto),y)
+	CFLAGS_DYNOPT	+= -DHAVE_CRYPTO
+	CFLAGS_STATOPT	+= -DHAVE_CRYPTO
+	LIBS_DYNOPT	+= -lcrypto
+	HAS_CRYPTO	:= y
+else
+	NOTFOUND	+= crypto
+endif
+
 ifeq (y,$(ARCH_HAS_FRAMEBUFFER))
 	OBJS	+= hw/vesa.o
 
@@ -306,6 +315,13 @@ endif
 
 ifeq (y,$(ARCH_HAS_FLASH_MEM))
 	OBJS	+= hw/cfi_flash.o
+endif
+
+# TPM log is optional, enabled only if libcrypto is present
+ifeq (yy,$(HAS_CRYPTO)$(ARCH_WANT_TPM_LOG))
+	OBJS_DYNOPT	+= tpm/event-log.o
+	CFLAGS_DYNOPT	+= -DCONFIG_HAS_EVENT_LOG
+	CFLAGS_STATOPT	+= -DCONFIG_HAS_EVENT_LOG
 endif
 
 ifeq ($(call try-build,$(SOURCE_ZLIB),$(CFLAGS),$(LDFLAGS) -lz),y)
