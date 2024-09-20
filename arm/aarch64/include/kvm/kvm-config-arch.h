@@ -31,6 +31,8 @@ int sve_vl_parser(const struct option *opt, const char *arg, int unset);
 	OPT_STRING('\0', "measurement-algo", &(cfg)->measurement_algo,	\
 			 "sha256, sha512",				\
 			 "Realm Measurement algorithm, default: sha256"),\
+	OPT_BOOLEAN('\0', "measurement-log", &(cfg)->measurement_log,	\
+			"enable Realm measurement log"),		\
 	OPT_STRING('\0', "realm-pv", &(cfg)->realm_pv,			\
 			"personalisation value",			\
 			"Personalisation Value (only) for Realm VMs"),  \

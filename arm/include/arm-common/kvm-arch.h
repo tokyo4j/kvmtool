@@ -66,6 +66,8 @@
 
 #define ARM_LOMAP_MAX_MEMORY	((1ULL << 32) - ARM_MEMORY_AREA)
 
+/* 64KB event log should be good? */
+#define EVENT_LOG_MAX_SIZE	(64 << 10)
 
 #define KVM_IOEVENTFD_HAS_PIO	0
 
@@ -99,6 +101,7 @@ struct kvm_arch {
 	u64	initrd_guest_start;
 	u64	initrd_size;
 	u64	dtb_guest_start;
+	u64	event_log_guest_start;
 
 	cpu_set_t *vcpu_affinity_cpuset;
 	u64	measurement_algo;

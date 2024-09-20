@@ -200,6 +200,7 @@ ifeq ($(ARCH), arm64)
 
 	ARCH_WANT_LIBFDT := y
 	ARCH_HAS_FLASH_MEM := y
+	ARCH_WANT_TPM_LOG := y
 endif
 
 ifeq ($(ARCH),mips)

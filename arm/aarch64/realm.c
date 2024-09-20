@@ -1,6 +1,7 @@
 #include <linux/list.h>
 #include "kvm/kvm.h"
 #include "kvm/kvm-cpu.h"
+#include "kvm/tpm-event-log.h"
 
 #include "asm/realm.h"
 
@@ -88,12 +89,12 @@ static void realm_init_ipa_range(struct kvm *kvm, u64 start, u64 size)
 		start, start + size);
 }
 
-static void __realm_populate(struct kvm *kvm, u64 start, u64 size)
+static void __realm_populate(struct kvm *kvm, u64 start, u64 size, bool measured)
 {
 	struct arm_rme_populate_realm populate_args = {
 		.base  = start,
 		.size  = size,
-		.flags = KVM_ARM_RME_POPULATE_FLAGS_MEASURE,
+		.flags = measured ? KVM_ARM_RME_POPULATE_FLAGS_MEASURE : 0,
 	};
 	struct kvm_enable_cap rme_populate_realm = {
 		.cap = KVM_CAP_ARM_RME,
@@ -111,7 +112,8 @@ static void __realm_populate(struct kvm *kvm, u64 start, u64 size)
 static void realm_populate(struct kvm *kvm, struct realm_ram_region *region)
 {
 	__realm_populate(kvm, region->start,
-			 region->file_end - region->start);
+			 region->file_end - region->start,
+			 /* measured */ true);
 }
 
 void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
@@ -164,6 +166,10 @@ static int kvm_arm_realm_finalize(struct kvm *kvm)
 		list_del(&region->list);
 		free(region);
 	}
+
+	__realm_populate(kvm, kvm->arch.event_log_guest_start,
+			 EVENT_LOG_MAX_SIZE,
+			 /* measured */ false);
 
 	/*
 	 * VCPU reset must happen before the realm is activated, because their

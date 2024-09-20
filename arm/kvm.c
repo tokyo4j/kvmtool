@@ -4,6 +4,7 @@
 #include "kvm/8250-serial.h"
 #include "kvm/virtio-console.h"
 #include "kvm/fdt.h"
+#include "kvm/tpm-event-log.h"
 
 #include "arm-common/gic.h"
 #include "asm/realm.h"
@@ -44,6 +45,45 @@ static void try_increase_mlock_limit(struct kvm *kvm)
 	new_limit.rlim_max = max((rlim_t)size, mlock_limit.rlim_max);
 	/* Requires CAP_SYS_RESOURCE capability. */
 	setrlimit(RLIMIT_MEMLOCK, &new_limit);
+}
+
+static int arm_init_event_log(struct kvm *kvm)
+{
+	void *event_log;
+	enum event_log_hash_algo algo;
+
+	if (!kvm->cfg.arch.measurement_log)
+		return 0;
+
+	if (!kvm__is_realm(kvm)) {
+		pr_err("measurement log is only useful with a Realm at the moment");
+		return -EINVAL;
+	}
+
+	/*
+	 * Put the event log at the end of RAM or 256M, whichever is lower.
+	 * This shifts the initrd and DTB down. If the verifier reads the event
+	 * log, it will find the addresses of those components in there. However
+	 * a verifier that ignores the log content and expects a static layout
+	 * will need to take the log into account when computing base addresses
+	 * and DTB content.
+	 */
+	event_log = kvm->ram_start + min(kvm->ram_size, (u64)SZ_256M) - EVENT_LOG_MAX_SIZE;
+	kvm->arch.event_log_guest_start = host_to_guest_flat(kvm, event_log);
+
+	switch (kvm->arch.measurement_algo) {
+	case ARM_RME_CONFIG_MEASUREMENT_ALGO_SHA256:
+		algo = EVENT_LOG_HASH_SHA256;
+		break;
+	case ARM_RME_CONFIG_MEASUREMENT_ALGO_SHA512:
+		algo = EVENT_LOG_HASH_SHA512;
+		break;
+	default:
+		pr_err("unsupported hash algo for event log");
+		return 1;
+	}
+
+	return tpm_event_log_init(event_log, EVENT_LOG_MAX_SIZE, algo);
 }
 
 void kvm__init_ram(struct kvm *kvm)
@@ -102,6 +142,13 @@ void kvm__init_ram(struct kvm *kvm)
 
 	pr_debug("RAM created at 0x%llx - 0x%llx (host ram_start 0x%llx)",
 		 phys_start, phys_start + phys_size - 1, (u64)kvm->ram_start);
+
+	/*
+	 * TODO: make event log optional. When enabled, the DTB and initrd
+	 * addresses move, and do not follow the VM spec
+	 */
+	if (arm_init_event_log(kvm))
+		die("failed to create event log");
 }
 
 void kvm__arch_read_term(struct kvm *kvm)
@@ -165,6 +212,8 @@ bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 	 * so we can't just place them at the top of memory.
 	 */
 	limit = kvm->ram_start + min(kvm->ram_size, (u64)SZ_256M) - 1;
+	if (kvm->arch.event_log_guest_start)
+		limit = guest_flat_to_host(kvm, kvm->arch.event_log_guest_start) - 1;
 
 	kern_offset = kvm__arch_get_kern_offset(kvm, fd_kernel);
 	pos = kvm->ram_start + kern_offset;
@@ -292,6 +341,8 @@ bool kvm__load_firmware(struct kvm *kvm, const char *firmware_filename)
 	int fd;
 
 	limit = kvm->ram_start + kvm->ram_size;
+	if (kvm->arch.event_log_guest_start)
+		limit = guest_flat_to_host(kvm, kvm->arch.event_log_guest_start);
 
 	/* For default firmware address, lets load it at the begining of RAM */
 	if (fw_addr == 0)

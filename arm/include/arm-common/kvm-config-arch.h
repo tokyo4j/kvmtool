@@ -14,6 +14,7 @@ struct kvm_config_arch {
 	bool		has_pmuv3;
 	bool		mte_disabled;
 	bool		is_realm;
+	bool		measurement_log;
 	u64		kaslr_seed;
 	enum irqchip_type irqchip;
 	u64		fw_addr;

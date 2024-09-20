@@ -16,6 +16,9 @@
 #include <linux/sizes.h>
 #include <linux/psci.h>
 
+/* "event-log@<u64>\0" */
+#define EVENT_LOG_NAME_SIZE (10 + 16 + 1)
+
 static void dump_fdt(const char *dtb_file, void *fdt)
 {
 	int count, fd;
@@ -125,6 +128,48 @@ static int load_dtb(const char *filename, void *dest)
 	return 0;
 }
 
+static void generate_reserved_memory(void *fdt, struct kvm *kvm)
+{
+	u64 resv_mem_prop;
+	u64 event_log_start = kvm->arch.event_log_guest_start;
+
+	if (!kvm->cfg.pkvm && !event_log_start)
+		return;
+
+	_FDT(fdt_begin_node(fdt, "reserved-memory"));
+	_FDT(fdt_property_cell(fdt, "#address-cells", 0x2));
+	_FDT(fdt_property_cell(fdt, "#size-cells", 0x2));
+	_FDT(fdt_property(fdt, "ranges", NULL, 0));
+
+	/* Restricted DMA */
+	if (kvm->cfg.pkvm) {
+		_FDT(fdt_begin_node(fdt, "restricted_dma_reserved"));
+		_FDT(fdt_property_string(fdt, "compatible", "restricted-dma-pool"));
+		resv_mem_prop = cpu_to_fdt64(SZ_8M);
+		_FDT(fdt_property(fdt, "size", &resv_mem_prop, sizeof(resv_mem_prop)));
+		_FDT(fdt_property_cell(fdt, "phandle", PHANDLE_DMA));
+		_FDT(fdt_end_node(fdt));
+	}
+
+	if (event_log_start) {
+		char name[EVENT_LOG_NAME_SIZE];
+		u64 ccel_reg_prop[] = {
+			cpu_to_fdt64(event_log_start),
+			cpu_to_fdt64(EVENT_LOG_MAX_SIZE),
+		};
+
+		snprintf(name, EVENT_LOG_NAME_SIZE, "event-log@%llx",
+			 event_log_start);
+		_FDT(fdt_begin_node(fdt, name));
+		_FDT(fdt_property_string(fdt, "compatible", "cc-event-log"));
+		_FDT(fdt_property(fdt, "reg", ccel_reg_prop,
+				  sizeof(ccel_reg_prop)));
+		_FDT(fdt_end_node(fdt));
+	}
+
+	_FDT(fdt_end_node(fdt));
+}
+
 static int create_dtb(struct kvm *kvm, void *fdt_dest)
 {
 	struct device_header *dev_hdr;
@@ -139,7 +184,6 @@ static int create_dtb(struct kvm *kvm, void *fdt_dest)
 					void (*)(void *, u8, enum irq_type));
 	void (*generate_cpu_peripheral_fdt_nodes)(void *, struct kvm *)
 					= kvm->cpus[0]->generate_fdt_nodes;
-	u64 resv_mem_prop;
 
 	/* Create new tree without a reserve map */
 	_FDT(fdt_create(fdt, FDT_MAX_SIZE));
@@ -187,22 +231,7 @@ static int create_dtb(struct kvm *kvm, void *fdt_dest)
 	_FDT(fdt_property(fdt, "reg", mem_reg_prop, sizeof(mem_reg_prop)));
 	_FDT(fdt_end_node(fdt));
 
-	if (kvm->cfg.pkvm) {
-		/* Reserved memory (restricted DMA) */
-		_FDT(fdt_begin_node(fdt, "reserved-memory"));
-		_FDT(fdt_property_cell(fdt, "#address-cells", 0x2));
-		_FDT(fdt_property_cell(fdt, "#size-cells", 0x2));
-		_FDT(fdt_property(fdt, "ranges", NULL, 0));
-
-		_FDT(fdt_begin_node(fdt, "restricted_dma_reserved"));
-		_FDT(fdt_property_string(fdt, "compatible", "restricted-dma-pool"));
-		resv_mem_prop = cpu_to_fdt64(SZ_8M);
-		_FDT(fdt_property(fdt, "size", &resv_mem_prop, sizeof(resv_mem_prop)));
-		_FDT(fdt_property_cell(fdt, "phandle", PHANDLE_DMA));
-		_FDT(fdt_end_node(fdt));
-
-		_FDT(fdt_end_node(fdt));
-	}
+	generate_reserved_memory(fdt, kvm);
 
 	/* CPU and peripherals (interrupt controller, timers, etc) */
 	generate_cpu_nodes(fdt, kvm);
