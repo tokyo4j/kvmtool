@@ -113,13 +113,6 @@ static void realm_populate(struct kvm *kvm, struct realm_ram_region *region)
 {
 	__realm_populate(kvm, region->start,
 			 region->file_end - region->start);
-	/*
-	 * Mark the unpopulated areas of the kernel image as
-	 * RAM explicitly.
-	  */
-	if (region->file_end < region->mem_end)
-		realm_init_ipa_range(kvm, region->file_end,
-				     region->mem_end - region->file_end);
 }
 
 void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
@@ -161,6 +154,8 @@ static int kvm_arm_realm_finalize(struct kvm *kvm)
 		return 0;
 
 	kvm_arm_realm_create_realm_descriptor(kvm);
+
+	realm_init_ipa_range(kvm, kvm->arch.memory_guest_start, kvm->ram_size);
 
 	list_for_each_entry_safe(region, next, &realm_ram_regions, list) {
 		realm_populate(kvm, region);
