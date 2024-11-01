@@ -11,8 +11,10 @@ static inline bool kvm__is_realm(struct kvm *kvm)
 }
 
 static inline void kvm_arm_realm_populate_ram(struct kvm *kvm,
+					      void *host_addr,
 					      unsigned long start,
-					      unsigned long file_size)
+					      unsigned long file_size,
+					      enum kvm_image_type image_type)
 {
 }
 

@@ -192,9 +192,11 @@ static void realm_init_ipa_range(struct kvm *kvm, u64 start, u64 size)
 
 static void __realm_populate(struct kvm *kvm, u64 start, u64 size, bool measured)
 {
+	u64 align_start = ALIGN_DOWN(start, SZ_64K);
+	u64 align_end = ALIGN(start + size, SZ_64K);
 	struct arm_rme_populate_realm populate_args = {
-		.base  = start,
-		.size  = size,
+		.base  = align_start,
+		.size  = align_end - align_start,
 		.flags = measured ? KVM_ARM_RME_POPULATE_FLAGS_MEASURE : 0,
 	};
 	struct kvm_enable_cap rme_populate_realm = {
@@ -215,10 +217,18 @@ static void realm_populate(struct kvm *kvm, struct realm_ram_region *region)
 	__realm_populate(kvm, region->start,
 			 region->file_end - region->start,
 			 /* measured */ true);
+
+	if (!kvm->cfg.arch.measurement_log)
+		return;
+
+	WARN_ON(tpm_event_log_add_image(region->image_type, region->host_addr,
+					region->start, region->file_end -
+					region->start));
 }
 
-void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
-				unsigned long file_size)
+void kvm_arm_realm_populate_ram(struct kvm *kvm, void *host_addr,
+				unsigned long start, unsigned long file_size,
+				enum kvm_image_type image_type)
 {
 	struct realm_ram_region *new_region, *next;
 
@@ -226,8 +236,10 @@ void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
 	if (!new_region)
 		die("cannot allocate realm RAM region");
 
-	new_region->start = ALIGN_DOWN(start, SZ_64K);
-	new_region->file_end = ALIGN(start + file_size, SZ_64K);
+	new_region->start = start;
+	new_region->file_end = start + file_size;
+	new_region->image_type = image_type;
+	new_region->host_addr = host_addr;
 
 	/* Keep the list sorted */
 	list_for_each_entry(next, &realm_ram_regions, list) {
@@ -310,16 +322,23 @@ static int kvm_arm_realm_finalize(struct kvm *kvm)
 		free(region);
 	}
 
-	__realm_populate(kvm, kvm->arch.event_log_guest_start,
-			 EVENT_LOG_MAX_SIZE,
-			 /* measured */ false);
-
 	/*
 	 * VCPU reset must happen before the realm is activated, because their
 	 * state is part of the cryptographic measurement for the realm.
 	 */
 	for (i = 0; i < kvm->nrcpus; i++)
 		kvm_cpu__reset_vcpu(kvm->cpus[i]);
+
+
+	if (kvm->cfg.arch.measurement_log) {
+		WARN_ON(tpm_event_log_add_image(KVM_IMAGE_TYPE_EVENT_LOG, NULL,
+						kvm->arch.event_log_guest_start,
+						EVENT_LOG_MAX_SIZE));
+		/* This seals the log: future modifications aren't copied into guest mem */
+		__realm_populate(kvm, kvm->arch.event_log_guest_start,
+				 EVENT_LOG_MAX_SIZE,
+				 /* measured */ false);
+	}
 
 	/* Activate and seal the measurement for the realm. */
 	kvm_arm_realm_activate_realm(kvm);

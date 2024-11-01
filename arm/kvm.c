@@ -241,8 +241,9 @@ bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 		 file_size);
 
 	if (kvm__is_realm(kvm)) {
-		kvm_arm_realm_populate_ram(kvm, kvm->arch.kern_guest_start,
-					   file_size);
+		kvm_arm_realm_populate_ram(kvm, pos, kvm->arch.kern_guest_start,
+					   file_size,
+					   KVM_IMAGE_TYPE_KERNEL);
 		/*
 		 * Make sure the initrd doesn't get loaded in the tail page of
 		 * the kernel.
@@ -305,9 +306,10 @@ bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 		 * are overlapped in a single 4K page.
 		 */
 		if (kvm__is_realm(kvm))
-			kvm_arm_realm_populate_ram(kvm,
+			kvm_arm_realm_populate_ram(kvm, pos,
 						   kvm->arch.initrd_guest_start,
-						   kvm->arch.initrd_size);
+						   kvm->arch.initrd_size,
+						   KVM_IMAGE_TYPE_INITRD);
 	} else {
 		kvm->arch.initrd_size = 0;
 	}
@@ -381,8 +383,9 @@ bool kvm__load_firmware(struct kvm *kvm, const char *firmware_filename)
 	 * a Realm.
 	 */
 	if (kvm__is_realm(kvm))
-		kvm_arm_realm_populate_ram(kvm, kvm->arch.kern_guest_start,
-					   fw_sz);
+		kvm_arm_realm_populate_ram(kvm, host_pos,
+					   kvm->arch.kern_guest_start, fw_sz,
+					   KVM_IMAGE_TYPE_FIRMWARE);
 
 	host_pos += mem_sz;
 	/*
