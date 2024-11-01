@@ -1,6 +1,7 @@
 #include "kvm/kvm-cpu.h"
 #include "kvm/kvm.h"
 #include "kvm/virtio.h"
+#include "kvm/util.h"
 #include "asm/realm.h"
 
 #include <asm/ptrace.h>
@@ -132,10 +133,17 @@ static void reset_vcpu_aarch64(struct kvm_cpu *vcpu)
 	}
 
 	if (kvm__is_realm(kvm)) {
+		u64 gprs[8] = {
+			cpu_to_le64(kvm->arch.dtb_guest_start),
+		};
 		int feature = KVM_ARM_VCPU_REC;
 
 		if (ioctl(vcpu->vcpu_fd, KVM_ARM_VCPU_FINALIZE, &feature) < 0)
 			die_perror("KVM_ARM_VCPU_FINALIZE(KVM_ARM_VCPU_REC)");
+
+		if (vcpu->cpu_id == 0)
+			realm_log_rec(kvm, 1 /* runnable */,
+				      kvm->arch.kern_guest_start, gprs);
 	}
 }
 

@@ -206,6 +206,9 @@ int kvm__get_vm_type(struct kvm *kvm)
 		pr_debug("Realm shared GPA mask: 0x%llx\n",
 					kvm->arch.realm_shared_bit);
 	}
+
+	kvm->arch.ipa_bits = ipa_bits;
+
 	return vm_type | KVM_VM_TYPE_ARM_IPA_SIZE(ipa_bits);
 }
 
