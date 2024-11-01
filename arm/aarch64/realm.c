@@ -7,7 +7,6 @@
 struct realm_ram_region {
 	u64 start;
 	u64 file_end;
-	u64 mem_end;
 	struct list_head list;
 };
 
@@ -116,8 +115,7 @@ static void realm_populate(struct kvm *kvm, struct realm_ram_region *region)
 }
 
 void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
-				unsigned long file_size,
-				unsigned long mem_size)
+				unsigned long file_size)
 {
 	struct realm_ram_region *new_region;
 
@@ -127,7 +125,6 @@ void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
 
 	new_region->start = ALIGN_DOWN(start, SZ_64K);
 	new_region->file_end = ALIGN(start + file_size, SZ_64K);
-	new_region->mem_end = ALIGN(start + mem_size, SZ_64K);
 
 	list_add_tail(&new_region->list, &realm_ram_regions);
 }

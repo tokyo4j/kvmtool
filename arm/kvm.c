@@ -182,7 +182,7 @@ bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 
 	if (kvm__is_realm(kvm)) {
 		kvm_arm_realm_populate_ram(kvm, kvm->arch.kern_guest_start,
-					   file_size, mem_size);
+					   file_size);
 		/*
 		 * Make sure the initrd doesn't get loaded in the tail page of
 		 * the kernel.
@@ -247,7 +247,6 @@ bool kvm__arch_load_kernel_image(struct kvm *kvm, int fd_kernel, int fd_initrd,
 		if (kvm__is_realm(kvm))
 			kvm_arm_realm_populate_ram(kvm,
 						   kvm->arch.initrd_guest_start,
-						   kvm->arch.initrd_size,
 						   kvm->arch.initrd_size);
 	} else {
 		kvm->arch.initrd_size = 0;
@@ -321,7 +320,7 @@ bool kvm__load_firmware(struct kvm *kvm, const char *firmware_filename)
 	 */
 	if (kvm__is_realm(kvm))
 		kvm_arm_realm_populate_ram(kvm, kvm->arch.kern_guest_start,
-					   fw_sz, mem_sz);
+					   fw_sz);
 
 	host_pos += mem_sz;
 	/*

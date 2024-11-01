@@ -261,7 +261,7 @@ static int setup_fdt(struct kvm *kvm)
 
 	if (kvm__is_realm(kvm))
 		kvm_arm_realm_populate_ram(kvm, kvm->arch.dtb_guest_start,
-					   FDT_MAX_SIZE, FDT_MAX_SIZE);
+					   FDT_MAX_SIZE);
 
 	return 0;
 }
