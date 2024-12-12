@@ -164,6 +164,9 @@ void kvm_cpu__select_features(struct kvm *kvm, struct kvm_vcpu_init *init)
 	if (!kvm->cfg.arch.disable_sve &&
 	    kvm__supports_vm_extension(kvm, KVM_CAP_ARM_SVE))
 		init->features[0] |= 1UL << KVM_ARM_VCPU_SVE;
+
+	if (kvm__is_realm(kvm))
+		init->features[0] |= 1UL << KVM_ARM_VCPU_REC;
 }
 
 int sve_vl_parser(const struct option *opt, const char *arg, int unset)
