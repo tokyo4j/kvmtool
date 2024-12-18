@@ -8,6 +8,13 @@
 
 #include <kvm/util.h>
 
+u64 kvm__gpa_to_guest_flat(struct kvm *kvm, u64 gpa)
+{
+	if (kvm__is_realm(kvm))
+		return gpa & (kvm->arch.realm_shared_bit - 1);
+	return gpa;
+}
+
 int vcpu_affinity_parser(const struct option *opt, const char *arg, int unset)
 {
 	struct kvm *kvm = opt->ptr;
@@ -187,6 +194,11 @@ int kvm__get_vm_type(struct kvm *kvm)
 	if (ipa_bits > max_ipa_bits)
 		die("Memory too large for this system (needs %d bits, %d available)", ipa_bits, max_ipa_bits);
 
+	if (kvm__is_realm(kvm)) {
+		kvm->arch.realm_shared_bit = (1ULL << (ipa_bits - 1));
+		pr_debug("Realm shared GPA mask: 0x%llx\n",
+					kvm->arch.realm_shared_bit);
+	}
 	return vm_type | KVM_VM_TYPE_ARM_IPA_SIZE(ipa_bits);
 }
 

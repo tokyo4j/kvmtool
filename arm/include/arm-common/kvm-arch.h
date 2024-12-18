@@ -103,6 +103,7 @@ struct kvm_arch {
 	cpu_set_t *vcpu_affinity_cpuset;
 	u64	measurement_algo;
 	bool	realm_is_active;
+	u64	realm_shared_bit;
 };
 
 #endif /* ARM_COMMON__KVM_ARCH_H */

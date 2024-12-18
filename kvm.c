@@ -415,9 +415,15 @@ out:
 	return ret;
 }
 
-void *guest_flat_to_host(struct kvm *kvm, u64 offset)
+u64 __attribute__((weak)) kvm__gpa_to_guest_flat(struct kvm *kvm, u64 gpa)
+{
+	return gpa;
+}
+
+void *guest_flat_to_host(struct kvm *kvm, u64 gpa)
 {
 	struct kvm_mem_bank *bank;
+	u64 offset = kvm__gpa_to_guest_flat(kvm, gpa);
 
 	list_for_each_entry(bank, &kvm->mem_banks, list) {
 		u64 bank_start = bank->guest_phys_addr;
