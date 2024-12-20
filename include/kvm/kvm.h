@@ -135,6 +135,8 @@ int kvm__destroy_mem(struct kvm *kvm, u64 guest_phys, u64 size, void *userspace_
 int kvm__register_mem(struct kvm *kvm, u64 guest_phys, u64 size, void *userspace_addr,
 		      int memfd, u64 offset, enum kvm_mem_type type);
 u64 kvm__gpa_to_guest_flat(struct kvm *kvm, u64 gpa);
+u64 kvm__gpa_make_shared(struct kvm *kvm, u64 gpa);
+
 static inline int kvm__register_ram(struct kvm *kvm, u64 guest_phys, u64 size,
 				    void *userspace_addr, int memfd, u64 offset)
 {

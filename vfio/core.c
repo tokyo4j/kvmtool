@@ -364,6 +364,11 @@ static int vfio_get_iommu_type(void)
 	return -ENODEV;
 }
 
+u64 __attribute__((weak)) kvm__gpa_make_shared(struct kvm *kvm, u64 gpa)
+{
+	return gpa;
+}
+
 int vfio_map_mem_range(struct kvm *kvm, __u64 host_addr, __u64 iova, __u64 size)
 {
 	int ret = 0;
@@ -371,10 +376,10 @@ int vfio_map_mem_range(struct kvm *kvm, __u64 host_addr, __u64 iova, __u64 size)
 		.argsz	= sizeof(dma_map),
 		.flags	= VFIO_DMA_MAP_FLAG_READ | VFIO_DMA_MAP_FLAG_WRITE,
 		.vaddr	= host_addr,
-		.iova	= iova,
 		.size	= size,
 	};
 
+	dma_map.iova = kvm__gpa_make_shared(kvm, iova);
 	/* Map the guest memory for DMA (i.e. provide isolation) */
 	if (ioctl(vfio_container, VFIO_IOMMU_MAP_DMA, &dma_map)) {
 		ret = -errno;
@@ -390,9 +395,9 @@ int vfio_unmap_mem_range(struct kvm *kvm, __u64 iova, __u64 size)
 	struct vfio_iommu_type1_dma_unmap dma_unmap = {
 		.argsz = sizeof(dma_unmap),
 		.size = size,
-		.iova = iova,
 	};
 
+	dma_unmap.iova = kvm__gpa_make_shared(kvm, iova);
 	ioctl(vfio_container, VFIO_IOMMU_UNMAP_DMA, &dma_unmap);
 
 	return 0;
