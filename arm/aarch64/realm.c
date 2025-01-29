@@ -125,9 +125,9 @@ void kvm_arm_realm_populate_ram(struct kvm *kvm, unsigned long start,
 	if (!new_region)
 		die("cannot allocate realm RAM region");
 
-	new_region->start = ALIGN_DOWN(start, SZ_4K);
-	new_region->file_end = ALIGN(start + file_size, SZ_4K);
-	new_region->mem_end = ALIGN(start + mem_size, SZ_4K);
+	new_region->start = ALIGN_DOWN(start, SZ_64K);
+	new_region->file_end = ALIGN(start + file_size, SZ_64K);
+	new_region->mem_end = ALIGN(start + mem_size, SZ_64K);
 
 	list_add_tail(&new_region->list, &realm_ram_regions);
 }
