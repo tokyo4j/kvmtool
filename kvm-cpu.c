@@ -172,6 +172,7 @@ int kvm_cpu__start(struct kvm_cpu *cpu)
 
 		switch (cpu->kvm_run->exit_reason) {
 		case KVM_EXIT_UNKNOWN:
+			goto panic_kvm;
 			break;
 		case KVM_EXIT_DEBUG:
 			kvm_cpu__show_registers(cpu);
