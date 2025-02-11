@@ -41,8 +41,15 @@ void kvm_cpu__run(struct kvm_cpu *vcpu)
 		return;
 
 	err = ioctl(vcpu->vcpu_fd, KVM_RUN, 0);
-	if (err < 0 && (errno != EINTR && errno != EAGAIN))
-		die_perror("KVM_RUN failed");
+	if (err < 0) {
+		if (errno == EINTR || errno == EAGAIN)
+			return;
+		else if (errno == EFAULT &&
+			 vcpu->kvm_run->exit_reason == KVM_EXIT_MEMORY_FAULT)
+			return;
+		else
+			die_perror("KVM_RUN failed");
+	}
 }
 
 static void kvm_cpu_signal_handler(int signum)
