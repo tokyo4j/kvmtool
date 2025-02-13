@@ -87,18 +87,18 @@ static void validate_realm_cfg(struct kvm *kvm)
 
 	if (kvm->cfg.arch.measurement_algo) {
 		if (strcmp(kvm->cfg.arch.measurement_algo, "sha256") == 0)
-			kvm->arch.measurement_algo = KVM_CAP_ARM_RME_MEASUREMENT_ALGO_SHA256;
+			kvm->arch.measurement_algo = ARM_RME_CONFIG_MEASUREMENT_ALGO_SHA256;
 		else if (strcmp(kvm->cfg.arch.measurement_algo, "sha512") == 0)
-			kvm->arch.measurement_algo = KVM_CAP_ARM_RME_MEASUREMENT_ALGO_SHA512;
+			kvm->arch.measurement_algo = ARM_RME_CONFIG_MEASUREMENT_ALGO_SHA512;
 		else
 			die("unknown realm measurement algorithm");
 	} else {
 		pr_debug("Realm Hash algorithm: Using default SHA256\n");
-		kvm->arch.measurement_algo = KVM_CAP_ARM_RME_MEASUREMENT_ALGO_SHA256;
+		kvm->arch.measurement_algo = ARM_RME_CONFIG_MEASUREMENT_ALGO_SHA256;
 	}
 
 	if (kvm->cfg.arch.realm_pv) {
-		if (strlen(kvm->cfg.arch.realm_pv) > KVM_CAP_ARM_RME_RPV_SIZE)
+		if (strlen(kvm->cfg.arch.realm_pv) > ARM_RME_CONFIG_RPV_SIZE)
 			die("Invalid size for Realm Personalization Value\n");
 	}
 }

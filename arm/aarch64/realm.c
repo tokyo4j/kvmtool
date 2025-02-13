@@ -15,8 +15,8 @@ static LIST_HEAD(realm_ram_regions);
 
 static void realm_configure_hash_algo(struct kvm *kvm)
 {
-	struct kvm_cap_arm_rme_config_item hash_algo_cfg = {
-		.cfg	= KVM_CAP_ARM_RME_CFG_HASH_ALGO,
+	struct arm_rme_config hash_algo_cfg = {
+		.cfg	= ARM_RME_CONFIG_HASH_ALGO,
 		.hash_algo = kvm->arch.measurement_algo,
 	};
 
@@ -32,8 +32,8 @@ static void realm_configure_hash_algo(struct kvm *kvm)
 
 static void realm_configure_rpv(struct kvm *kvm)
 {
-	struct kvm_cap_arm_rme_config_item rpv_cfg  = {
-		.cfg	= KVM_CAP_ARM_RME_CFG_RPV,
+	struct arm_rme_config rpv_cfg  = {
+		.cfg	= ARM_RME_CONFIG_RPV,
 	};
 
 	struct kvm_enable_cap rme_config = {
@@ -60,29 +60,29 @@ static void realm_configure_parameters(struct kvm *kvm)
 
 static void kvm_arm_realm_create_realm_descriptor(struct kvm *kvm)
 {
-	struct kvm_enable_cap rme_create_rd = {
+	struct kvm_enable_cap rme_create_realm = {
 		.cap = KVM_CAP_ARM_RME,
-		.args[0] = KVM_CAP_ARM_RME_CREATE_RD,
+		.args[0] = KVM_CAP_ARM_RME_CREATE_REALM,
 	};
 
 	realm_configure_parameters(kvm);
-	if (ioctl(kvm->vm_fd, KVM_ENABLE_CAP, &rme_create_rd) < 0)
-		die_perror("KVM_CAP_RME(KVM_CAP_ARM_RME_CREATE_RD)");
+	if (ioctl(kvm->vm_fd, KVM_ENABLE_CAP, &rme_create_realm) < 0)
+		die_perror("KVM_CAP_RME(KVM_CAP_ARM_RME_CREATE_REALM)");
 }
 
 static void realm_init_ipa_range(struct kvm *kvm, u64 start, u64 size)
 {
-	struct kvm_cap_arm_rme_init_ipa_args init_ipa_args = {
-		.init_ipa_base = start,
-		.init_ipa_size = size
+	struct arm_rme_init_ripas init_ripas_args = {
+		.base = start,
+		.size = size
 	};
-	struct kvm_enable_cap rme_init_ipa_realm = {
+	struct kvm_enable_cap rme_init_ripas_realm = {
 		.cap = KVM_CAP_ARM_RME,
-		.args[0] = KVM_CAP_ARM_RME_INIT_IPA_REALM,
-		.args[1] = (u64)&init_ipa_args
+		.args[0] = KVM_CAP_ARM_RME_INIT_RIPAS_REALM,
+		.args[1] = (u64)&init_ripas_args
 	};
 
-	if (ioctl(kvm->vm_fd, KVM_ENABLE_CAP, &rme_init_ipa_realm) < 0)
+	if (ioctl(kvm->vm_fd, KVM_ENABLE_CAP, &rme_init_ripas_realm) < 0)
 		die("unable to intialise IPA range for Realm %llx - %llx (size %llu)",
 		    start, start + size, size);
 	pr_debug("Initialized IPA range (%llx - %llx) as RAM\n",
@@ -91,10 +91,10 @@ static void realm_init_ipa_range(struct kvm *kvm, u64 start, u64 size)
 
 static void __realm_populate(struct kvm *kvm, u64 start, u64 size)
 {
-	struct kvm_cap_arm_rme_populate_realm_args populate_args = {
-		.populate_ipa_base = start,
-		.populate_ipa_size = size,
-		.flags		   = KVM_ARM_RME_POPULATE_FLAGS_MEASURE,
+	struct arm_rme_populate_realm populate_args = {
+		.base  = start,
+		.size  = size,
+		.flags = KVM_ARM_RME_POPULATE_FLAGS_MEASURE,
 	};
 	struct kvm_enable_cap rme_populate_realm = {
 		.cap = KVM_CAP_ARM_RME,

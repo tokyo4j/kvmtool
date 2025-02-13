@@ -43,9 +43,6 @@
 #define KVM_COALESCED_MMIO_PAGE_OFFSET 1
 #define KVM_DIRTY_LOG_PAGE_OFFSET 64
 
-#define KVM_REG_SIZE(id)						\
-	(1U << (((id) & KVM_REG_SIZE_MASK) >> KVM_REG_SIZE_SHIFT))
-
 struct kvm_regs {
 	struct user_pt_regs regs;	/* sp = sp_el0 */
 
@@ -421,29 +418,29 @@ enum {
 
 /* KVM_CAP_ARM_RME on VM fd */
 #define KVM_CAP_ARM_RME_CONFIG_REALM		0
-#define KVM_CAP_ARM_RME_CREATE_RD		1
-#define KVM_CAP_ARM_RME_INIT_IPA_REALM		2
+#define KVM_CAP_ARM_RME_CREATE_REALM		1
+#define KVM_CAP_ARM_RME_INIT_RIPAS_REALM	2
 #define KVM_CAP_ARM_RME_POPULATE_REALM		3
 #define KVM_CAP_ARM_RME_ACTIVATE_REALM		4
 
-#define KVM_CAP_ARM_RME_MEASUREMENT_ALGO_SHA256		0
-#define KVM_CAP_ARM_RME_MEASUREMENT_ALGO_SHA512		1
-
-#define KVM_CAP_ARM_RME_RPV_SIZE 64
-
 /* List of configuration items accepted for KVM_CAP_ARM_RME_CONFIG_REALM */
-#define KVM_CAP_ARM_RME_CFG_RPV			0
-#define KVM_CAP_ARM_RME_CFG_HASH_ALGO		1
+#define ARM_RME_CONFIG_RPV			0
+#define ARM_RME_CONFIG_HASH_ALGO		1
 
-struct kvm_cap_arm_rme_config_item {
+#define ARM_RME_CONFIG_MEASUREMENT_ALGO_SHA256		0
+#define ARM_RME_CONFIG_MEASUREMENT_ALGO_SHA512		1
+
+#define ARM_RME_CONFIG_RPV_SIZE 64
+
+struct arm_rme_config {
 	__u32 cfg;
 	union {
-		/* cfg == KVM_CAP_ARM_RME_CFG_RPV */
+		/* cfg == ARM_RME_CONFIG_RPV */
 		struct {
-			__u8	rpv[KVM_CAP_ARM_RME_RPV_SIZE];
+			__u8	rpv[ARM_RME_CONFIG_RPV_SIZE];
 		};
 
-		/* cfg == KVM_CAP_ARM_RME_CFG_HASH_ALGO */
+		/* cfg == ARM_RME_CONFIG_HASH_ALGO */
 		struct {
 			__u32	hash_algo;
 		};
@@ -453,18 +450,18 @@ struct kvm_cap_arm_rme_config_item {
 	};
 };
 
-#define KVM_ARM_RME_POPULATE_FLAGS_MEASURE	(1U << 0)
-struct kvm_cap_arm_rme_populate_realm_args {
-	__u64 populate_ipa_base;
-	__u64 populate_ipa_size;
+#define KVM_ARM_RME_POPULATE_FLAGS_MEASURE	(1 << 0)
+struct arm_rme_populate_realm {
+	__u64 base;
+	__u64 size;
 	__u32 flags;
 	__u32 reserved[3];
 };
 
-struct kvm_cap_arm_rme_init_ipa_args {
-	__u64 init_ipa_base;
-	__u64 init_ipa_size;
-	__u32 reserved[4];
+struct arm_rme_init_ripas {
+	__u64 base;
+	__u64 size;
+	__u64 reserved[2];
 };
 
 /* Device Control API on vcpu fd */
@@ -532,6 +529,12 @@ struct kvm_cap_arm_rme_init_ipa_args {
  * Valid only when the system event has a type of KVM_SYSTEM_EVENT_RESET.
  */
 #define KVM_SYSTEM_EVENT_RESET_FLAG_PSCI_RESET2	(1ULL << 0)
+
+/*
+ * Shutdown caused by a PSCI v1.3 SYSTEM_OFF2 call.
+ * Valid only when the system event has a type of KVM_SYSTEM_EVENT_SHUTDOWN.
+ */
+#define KVM_SYSTEM_EVENT_SHUTDOWN_FLAG_PSCI_OFF2	(1ULL << 0)
 
 /* run->fail_entry.hardware_entry_failure_reason codes. */
 #define KVM_EXIT_FAIL_ENTRY_CPU_UNSUPPORTED	(1ULL << 0)
