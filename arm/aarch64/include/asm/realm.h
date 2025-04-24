@@ -17,4 +17,6 @@ void kvm_arm_realm_populate_ram(struct kvm *kvm, void *host_addr,
 
 void realm_log_rec(struct kvm *kvm, u64 flags, u64 pc, u64 gprs[8]);
 
+uint64_t kvm_realm_reclaim_merged_page(struct kvm *kvm);
+
 #endif

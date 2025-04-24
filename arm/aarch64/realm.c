@@ -346,3 +346,13 @@ static int kvm_arm_realm_finalize(struct kvm *kvm)
 	return 0;
 }
 last_init(kvm_arm_realm_finalize)
+
+uint64_t kvm_realm_reclaim_merged_page(struct kvm *kvm)
+{
+	struct kvm_enable_cap activate_realm = {
+		.cap = KVM_CAP_ARM_RME,
+		.args[0] = KVM_CAP_ARM_RME_RECLAIM_MERGED_PAGE,
+	};
+
+	return ioctl(kvm->vm_fd, KVM_ENABLE_CAP, &activate_realm);
+}

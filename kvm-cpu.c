@@ -71,6 +71,12 @@ static void kvm_cpu_signal_handler(int signum)
 		 * the pause_lock.
 		 */
 		kvm__notify_paused();
+	} else if (signum == SIGKVMTIMER) {
+		if (kvm_realm_reclaim_merged_page(current_kvm_cpu->kvm)) {
+			// fprintf(stderr, "reclaimed a merged page\n");
+		} else {
+			// fprintf(stderr, "failed to reclaim a merged page\n");
+		}
 	}
 
 	/* For SIGKVMTASK cpu->task is already set */
@@ -157,9 +163,21 @@ int kvm_cpu__start(struct kvm_cpu *cpu)
 
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
 
+	timer_t timerid;
+	timer_create(CLOCK_MONOTONIC, &(struct sigevent){
+		.sigev_notify = SIGEV_THREAD_ID,
+		.sigev_signo = SIGKVMTIMER,
+		._sigev_un._tid = gettid(),
+	}, &timerid);
+	timer_settime(timerid, 0, &(struct itimerspec){
+		.it_interval.tv_sec = 3,
+		.it_value.tv_sec = 3,
+	}, NULL);
+
 	signal(SIGKVMEXIT, kvm_cpu_signal_handler);
 	signal(SIGKVMPAUSE, kvm_cpu_signal_handler);
 	signal(SIGKVMTASK, kvm_cpu_signal_handler);
+	signal(SIGKVMTIMER, kvm_cpu_signal_handler);
 
 	kvm_cpu__reset_vcpu(cpu);
 
