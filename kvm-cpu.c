@@ -6,6 +6,7 @@
 #include "kvm/virtio.h"
 #include "kvm/mutex.h"
 #include "kvm/barrier.h"
+#include "asm/realm.h"
 
 #include <sys/ioctl.h>
 #include <sys/mman.h>
@@ -72,10 +73,8 @@ static void kvm_cpu_signal_handler(int signum)
 		 */
 		kvm__notify_paused();
 	} else if (signum == SIGKVMTIMER) {
-		if (kvm_realm_reclaim_merged_page(current_kvm_cpu->kvm)) {
-			// fprintf(stderr, "reclaimed a merged page\n");
-		} else {
-			// fprintf(stderr, "failed to reclaim a merged page\n");
+		if (!kvm_realm_reclaim_merged_page(current_kvm_cpu->kvm)) {
+			fprintf(stderr, "reclaimed a merged page\n");
 		}
 	}
 
@@ -170,8 +169,8 @@ int kvm_cpu__start(struct kvm_cpu *cpu)
 		._sigev_un._tid = gettid(),
 	}, &timerid);
 	timer_settime(timerid, 0, &(struct itimerspec){
-		.it_interval.tv_sec = 3,
-		.it_value.tv_sec = 3,
+		.it_interval.tv_sec = 1,
+		.it_value.tv_sec = 1,
 	}, NULL);
 
 	signal(SIGKVMEXIT, kvm_cpu_signal_handler);
