@@ -162,16 +162,19 @@ int kvm_cpu__start(struct kvm_cpu *cpu)
 
 	pthread_sigmask(SIG_BLOCK, &sigset, NULL);
 
-	timer_t timerid;
-	timer_create(CLOCK_MONOTONIC, &(struct sigevent){
-		.sigev_notify = SIGEV_THREAD_ID,
-		.sigev_signo = SIGKVMTIMER,
-		._sigev_un._tid = gettid(),
-	}, &timerid);
-	timer_settime(timerid, 0, &(struct itimerspec){
-		.it_interval.tv_sec = 1,
-		.it_value.tv_sec = 1,
-	}, NULL);
+	if (getenv("RECLAIM_MERGED_PAGES")) {
+		timer_t timerid;
+		timer_create(CLOCK_MONOTONIC, &(struct sigevent){
+			.sigev_notify = SIGEV_THREAD_ID,
+			.sigev_signo = SIGKVMTIMER,
+			._sigev_un._tid = gettid(),
+		}, &timerid);
+		timer_settime(timerid, 0, &(struct itimerspec){
+			.it_interval.tv_sec = 0,
+			.it_interval.tv_nsec = 100000000,
+			.it_value.tv_sec = 1,
+		}, NULL);
+	}
 
 	signal(SIGKVMEXIT, kvm_cpu_signal_handler);
 	signal(SIGKVMPAUSE, kvm_cpu_signal_handler);
