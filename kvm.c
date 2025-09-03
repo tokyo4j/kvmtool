@@ -525,9 +525,9 @@ static int map_bank_range(struct kvm *kvm, struct kvm_mem_bank *bank, void *data
 	BUG_ON(!bank->memfd);
 
 	if (kvm->cfg.pkvm)
-		mapping = _mmap((void *)hva, range->size, PROT_RW, MAP_SHARED, bank->memfd, map_offset);
+		mapping = _mmap((void *)hva, range->size, PROT_RW, MAP_PRIVATE, bank->memfd, map_offset);
 	else
-		mapping = _mmap((void*) hva, range->size, PROT_RW, MAP_SHARED | MAP_ANON, -1, 0);
+		mapping = _mmap((void*) hva, range->size, PROT_RW, MAP_PRIVATE | MAP_ANON, -1, 0);
 	if (mapping == MAP_FAILED || mapping != (void *)hva)
 		pr_warning("%s gpa 0x%llx (size: %llu) at hva 0x%llx failed with mapping 0x%llx",
 			   __func__,
@@ -588,7 +588,7 @@ static int map_bank(struct kvm *kvm, struct kvm_mem_bank *bank, void *data)
 		 bank->memfd,
 		 (unsigned long long)bank->memfd_offset);
 
-	mapping = _mmap(bank->host_addr, bank->size, PROT_RW, MAP_SHARED, bank->memfd, bank->memfd_offset);
+	mapping = _mmap(bank->host_addr, bank->size, PROT_RW, MAP_PRIVATE, bank->memfd, bank->memfd_offset);
 	if (!mapping || mapping != bank->host_addr)
 		pr_warning("%s hva 0x%llx (size: %llu) failed with return 0x%llx",
 			   __func__,
